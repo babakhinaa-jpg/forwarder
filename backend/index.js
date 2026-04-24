@@ -76,13 +76,15 @@ app.get('/api/rules', requireAuth, (req, res) => {
 });
 
 app.post('/api/rules', requireAuth, (req, res) => {
-  const { name, listenPort, targetHost, targetPort, enabled } = req.body || {};
+  const { name, listenPort, targetHost, targetPort, enabled, protocol } = req.body || {};
   if (!listenPort || !targetHost || !targetPort) {
     return res.status(400).json({ error: 'listenPort, targetHost, targetPort are required' });
   }
   if (listenPort < 1 || listenPort > 65535 || targetPort < 1 || targetPort > 65535) {
     return res.status(400).json({ error: 'Port out of range (1-65535)' });
   }
+  const proto = ['TCP', 'UDP', 'BOTH'].includes((protocol || '').toUpperCase())
+    ? protocol.toUpperCase() : 'TCP';
 
   const rules = config.getRules();
   const conflict = rules.find((r) => r.listenPort === Number(listenPort) && r.id !== req.body.id);
@@ -94,6 +96,7 @@ app.post('/api/rules', requireAuth, (req, res) => {
     listenPort: Number(listenPort),
     targetHost,
     targetPort: Number(targetPort),
+    protocol: proto,
     enabled: enabled !== false,
     createdAt: new Date().toISOString(),
   };
@@ -113,7 +116,7 @@ app.put('/api/rules/:id', requireAuth, (req, res) => {
   const idx = rules.findIndex((r) => r.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Rule not found' });
 
-  const { name, listenPort, targetHost, targetPort, enabled } = req.body;
+  const { name, listenPort, targetHost, targetPort, enabled, protocol } = req.body;
   const updated = { ...rules[idx] };
 
   if (name !== undefined) updated.name = name;
@@ -125,6 +128,9 @@ app.put('/api/rules/:id', requireAuth, (req, res) => {
   if (targetHost !== undefined) updated.targetHost = targetHost;
   if (targetPort !== undefined) updated.targetPort = Number(targetPort);
   if (enabled !== undefined) updated.enabled = enabled;
+  if (protocol !== undefined && ['TCP', 'UDP', 'BOTH'].includes(protocol.toUpperCase())) {
+    updated.protocol = protocol.toUpperCase();
+  }
 
   // Restart forwarder if anything changed
   forwarder.stop(updated.id);
