@@ -54,6 +54,15 @@ echo -e "${CYAN}║     Port Forwarder  —  Installer     ║${NC}"
 echo -e "${CYAN}╚══════════════════════════════════════╝${NC}"
 echo ""
 
+# ── 0. Pull latest code from git ─────────────────────────────────────────────
+if git -C "$SRC_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
+  info "Pulling latest code from git..."
+  git -C "$SRC_DIR" pull --ff-only 2>&1 | sed 's/^/  /' || warn "git pull failed — using local code"
+  ok "Source is up to date"
+else
+  warn "Not a git repo — skipping git pull"
+fi
+
 # ── 1. Detect package manager ─────────────────────────────────────────────────
 detect_pkg_manager() {
   if   command -v apt-get &>/dev/null; then echo "apt"

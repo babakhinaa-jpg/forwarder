@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { I18nProvider } from './i18n.jsx';
 import Login from './components/Login.jsx';
 import Dashboard from './components/Dashboard.jsx';
 
-export default function App() {
+function AppInner() {
   const [username, setUsername] = useState(() => {
     const token = localStorage.getItem('pf_token');
-    // Decode username from JWT payload without validation (server validates)
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -15,13 +15,19 @@ export default function App() {
     return null;
   });
 
-  function handleLogin(user) { setUsername(user); }
-
   function handleLogout() {
     localStorage.removeItem('pf_token');
     setUsername(null);
   }
 
-  if (!username) return <Login onLogin={handleLogin} />;
+  if (!username) return <Login onLogin={setUsername} />;
   return <Dashboard username={username} onLogout={handleLogout} />;
+}
+
+export default function App() {
+  return (
+    <I18nProvider>
+      <AppInner />
+    </I18nProvider>
+  );
 }

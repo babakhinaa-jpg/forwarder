@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api.js';
+import { useI18n } from '../i18n.jsx';
 import RuleModal from './RuleModal.jsx';
 import PasswordModal from './PasswordModal.jsx';
+import LangPicker from './LangPicker.jsx';
 
 function formatBytes(b) {
   if (!b) return '0 B';
@@ -12,9 +14,9 @@ function formatBytes(b) {
 
 function ProtoTag({ proto }) {
   const colors = {
-    TCP: { bg: 'rgba(59,130,246,.15)', color: '#60a5fa' },
-    UDP: { bg: 'rgba(168,85,247,.15)', color: '#c084fc' },
-    BOTH: { bg: 'rgba(34,197,94,.12)', color: '#4ade80' },
+    TCP:  { bg: 'rgba(59,130,246,.15)', color: '#60a5fa' },
+    UDP:  { bg: 'rgba(168,85,247,.15)', color: '#c084fc' },
+    BOTH: { bg: 'rgba(34,197,94,.12)',  color: '#4ade80' },
   };
   const c = colors[proto] || colors.TCP;
   return (
@@ -24,46 +26,39 @@ function ProtoTag({ proto }) {
   );
 }
 
-function StatusBadge({ rule }) {
-  if (!rule.enabled) return <span className="badge badge-disabled"><span className="badge-dot" />Disabled</span>;
-  if (rule.running) return <span className="badge badge-running"><span className="badge-dot" />Running</span>;
-  return <span className="badge badge-stopped"><span className="badge-dot" />Stopped</span>;
+function StatusBadge({ rule, t }) {
+  if (!rule.enabled) return <span className="badge badge-disabled"><span className="badge-dot" />{t('status_disabled')}</span>;
+  if (rule.running)  return <span className="badge badge-running"><span className="badge-dot" />{t('status_running')}</span>;
+  return <span className="badge badge-stopped"><span className="badge-dot" />{t('status_stopped')}</span>;
 }
 
 function RuleStats({ stats, proto }) {
   if (!stats) return <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>;
-
-  const tcpStats = stats.tcp;
-  const udpStats = stats.udp;
-
-  if (proto === 'TCP' && tcpStats) {
-    return (
-      <div>
-        <div style={{ fontSize: 12 }}>↓ {formatBytes(tcpStats.bytesIn)} ↑ {formatBytes(tcpStats.bytesOut)}</div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{tcpStats.connections} conns / {tcpStats.activeConnections} active</div>
-      </div>
-    );
-  }
-  if (proto === 'UDP' && udpStats) {
-    return (
-      <div>
-        <div style={{ fontSize: 12 }}>↓ {formatBytes(udpStats.bytesIn)} ↑ {formatBytes(udpStats.bytesOut)}</div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{udpStats.packets} pkts / {udpStats.sessions} sessions</div>
-      </div>
-    );
-  }
-  if (proto === 'BOTH') {
-    return (
-      <div>
-        {tcpStats && <div style={{ fontSize: 11 }}><span style={{ color: '#60a5fa' }}>TCP</span> ↓{formatBytes(tcpStats.bytesIn)} ↑{formatBytes(tcpStats.bytesOut)} ({tcpStats.activeConnections} active)</div>}
-        {udpStats && <div style={{ fontSize: 11 }}><span style={{ color: '#c084fc' }}>UDP</span> ↓{formatBytes(udpStats.bytesIn)} ↑{formatBytes(udpStats.bytesOut)} ({udpStats.sessions} sess)</div>}
-      </div>
-    );
-  }
+  const tcp = stats.tcp;
+  const udp = stats.udp;
+  if (proto === 'TCP' && tcp) return (
+    <div>
+      <div style={{ fontSize: 12 }}>↓ {formatBytes(tcp.bytesIn)} ↑ {formatBytes(tcp.bytesOut)}</div>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{tcp.connections} / {tcp.activeConnections} active</div>
+    </div>
+  );
+  if (proto === 'UDP' && udp) return (
+    <div>
+      <div style={{ fontSize: 12 }}>↓ {formatBytes(udp.bytesIn)} ↑ {formatBytes(udp.bytesOut)}</div>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{udp.packets} pkts / {udp.sessions} sess</div>
+    </div>
+  );
+  if (proto === 'BOTH') return (
+    <div>
+      {tcp && <div style={{ fontSize: 11 }}><span style={{ color: '#60a5fa' }}>TCP</span> ↓{formatBytes(tcp.bytesIn)} ↑{formatBytes(tcp.bytesOut)} ({tcp.activeConnections} active)</div>}
+      {udp && <div style={{ fontSize: 11 }}><span style={{ color: '#c084fc' }}>UDP</span> ↓{formatBytes(udp.bytesIn)} ↑{formatBytes(udp.bytesOut)} ({udp.sessions} sess)</div>}
+    </div>
+  );
   return <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>;
 }
 
 export default function Dashboard({ username, onLogout }) {
+  const { t } = useI18n();
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -97,21 +92,22 @@ export default function Dashboard({ username, onLogout }) {
 
   async function handleCreate(form) {
     setSaving(true); setModalError('');
-    try { await api.createRule(form); await fetchRules(); setShowAdd(false); showToast('Rule created'); }
+    try { await api.createRule(form); await fetchRules(); setShowAdd(false); showToast(t('toast_created')); }
     catch (err) { setModalError(err.message); }
     finally { setSaving(false); }
   }
 
   async function handleUpdate(form) {
     setSaving(true); setModalError('');
-    try { await api.updateRule(editRule.id, form); await fetchRules(); setEditRule(null); showToast('Rule updated'); }
+    try { await api.updateRule(editRule.id, form); await fetchRules(); setEditRule(null); showToast(t('toast_updated')); }
     catch (err) { setModalError(err.message); }
     finally { setSaving(false); }
   }
 
   async function handleDelete(rule) {
-    if (!confirm(`Delete rule "${rule.name}"?`)) return;
-    try { await api.deleteRule(rule.id); await fetchRules(); showToast('Rule deleted', 'error'); }
+    const msg = t('delete_confirm').replace('%s', rule.name);
+    if (!confirm(msg)) return;
+    try { await api.deleteRule(rule.id); await fetchRules(); showToast(t('toast_deleted'), 'error'); }
     catch (err) { showToast(err.message, 'error'); }
   }
 
@@ -121,14 +117,12 @@ export default function Dashboard({ username, onLogout }) {
   }
 
   const activeCount = rules.filter(r => r.running).length;
-
   const totalBytes = rules.reduce((acc, r) => {
     if (!r.stats) return acc;
-    const t = r.stats.tcp ? r.stats.tcp.bytesIn + r.stats.tcp.bytesOut : 0;
-    const u = r.stats.udp ? r.stats.udp.bytesIn + r.stats.udp.bytesOut : 0;
-    return acc + t + u;
+    const tcp = r.stats.tcp ? r.stats.tcp.bytesIn + r.stats.tcp.bytesOut : 0;
+    const udp = r.stats.udp ? r.stats.udp.bytesIn + r.stats.udp.bytesOut : 0;
+    return acc + tcp + udp;
   }, 0);
-
   const totalConns = rules.reduce((acc, r) => {
     if (!r.stats) return acc;
     return acc + (r.stats.tcp?.connections || 0) + (r.stats.udp?.packets || 0);
@@ -139,34 +133,29 @@ export default function Dashboard({ username, onLogout }) {
       <header className="header">
         <div className="header-logo">
           <div style={{
-            background: 'white',
-            borderRadius: 8,
-            width: 36,
-            height: 36,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-            flexShrink: 0,
+            background: 'white', borderRadius: 8, width: 36, height: 36,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            overflow: 'hidden', flexShrink: 0,
             boxShadow: '0 0 0 1px rgba(255,255,255,.15)',
           }}>
             <img src="/logo.jpg" alt="logo" style={{ width: 34, height: 34, objectFit: 'cover' }} />
           </div>
-          Port Forwarder
+          {t('app_name')}
         </div>
         <div className="header-actions">
           <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{username}</span>
+          <LangPicker />
           <button className="btn btn-ghost" style={{ padding: '6px 12px' }} onClick={() => setShowPassword(true)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
-            Password
+            {t('btn_password')}
           </button>
           <button className="btn btn-ghost" style={{ padding: '6px 12px' }} onClick={onLogout}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
             </svg>
-            Logout
+            {t('btn_logout')}
           </button>
         </div>
       </header>
@@ -174,61 +163,61 @@ export default function Dashboard({ username, onLogout }) {
       <main className="main">
         <div className="stats-bar">
           <div className="stat-card">
-            <div className="stat-label">Total Rules</div>
+            <div className="stat-label">{t('stat_total')}</div>
             <div className="stat-value">{rules.length}</div>
           </div>
           <div className="stat-card">
-            <div className="stat-label">Active</div>
+            <div className="stat-label">{t('stat_active')}</div>
             <div className="stat-value" style={{ color: activeCount > 0 ? 'var(--success)' : 'var(--text-muted)' }}>{activeCount}</div>
           </div>
           <div className="stat-card">
-            <div className="stat-label">Traffic</div>
+            <div className="stat-label">{t('stat_traffic')}</div>
             <div className="stat-value" style={{ fontSize: 20 }}>{formatBytes(totalBytes)}</div>
           </div>
           <div className="stat-card">
-            <div className="stat-label">TCP Conns / UDP Pkts</div>
+            <div className="stat-label">{t('stat_conns')}</div>
             <div className="stat-value">{totalConns.toLocaleString()}</div>
           </div>
         </div>
 
         <div className="table-wrap">
           <div className="table-header">
-            <h2>Forwarding Rules</h2>
+            <h2>{t('rules_title')}</h2>
             <button className="btn btn-primary" onClick={() => { setModalError(''); setShowAdd(true); }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
-              Add Rule
+              {t('btn_add_rule')}
             </button>
           </div>
 
           {loading ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading…</div>
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>{t('loading')}</div>
           ) : rules.length === 0 ? (
             <div className="empty-state">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
-              <p>No forwarding rules yet</p>
-              <small>Click "Add Rule" to create your first rule</small>
+              <p>{t('empty_title')}</p>
+              <small>{t('empty_hint')}</small>
             </div>
           ) : (
             <table>
               <thead>
                 <tr>
-                  <th>Status</th>
-                  <th>Name</th>
-                  <th>Proto</th>
-                  <th>Route</th>
-                  <th>Stats</th>
-                  <th>On</th>
+                  <th>{t('col_status')}</th>
+                  <th>{t('col_name')}</th>
+                  <th>{t('col_proto')}</th>
+                  <th>{t('col_route')}</th>
+                  <th>{t('col_stats')}</th>
+                  <th>{t('col_on')}</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
                 {rules.map(rule => (
                   <tr key={rule.id}>
-                    <td><StatusBadge rule={rule} /></td>
+                    <td><StatusBadge rule={rule} t={t} /></td>
                     <td style={{ fontWeight: 600 }}>{rule.name}</td>
                     <td><ProtoTag proto={rule.protocol || 'TCP'} /></td>
                     <td>
@@ -284,8 +273,8 @@ export default function Dashboard({ username, onLogout }) {
         </div>
       )}
 
-      {showAdd && <RuleModal onSave={handleCreate} onClose={() => setShowAdd(false)} loading={saving} error={modalError} />}
-      {editRule && <RuleModal rule={editRule} onSave={handleUpdate} onClose={() => setEditRule(null)} loading={saving} error={modalError} />}
+      {showAdd   && <RuleModal onSave={handleCreate} onClose={() => setShowAdd(false)} loading={saving} error={modalError} />}
+      {editRule  && <RuleModal rule={editRule} onSave={handleUpdate} onClose={() => setEditRule(null)} loading={saving} error={modalError} />}
       {showPassword && <PasswordModal onClose={() => setShowPassword(false)} />}
     </div>
   );

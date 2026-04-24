@@ -1,12 +1,8 @@
 import { useState } from 'react';
-
-const PROTOCOLS = [
-  { value: 'TCP', label: 'TCP', desc: 'Stream — HTTP, SSH, databases' },
-  { value: 'UDP', label: 'UDP', desc: 'Datagram — DNS, games, VoIP' },
-  { value: 'BOTH', label: 'TCP + UDP', desc: 'Both protocols on same port' },
-];
+import { useI18n } from '../i18n.jsx';
 
 export default function RuleModal({ rule, onSave, onClose, loading, error }) {
+  const { t } = useI18n();
   const [form, setForm] = useState({
     name: rule?.name || '',
     listenPort: rule?.listenPort || '',
@@ -25,41 +21,39 @@ export default function RuleModal({ rule, onSave, onClose, loading, error }) {
 
   const isEdit = !!rule;
 
+  const PROTOCOLS = [
+    { value: 'TCP',  label: 'TCP',      desc: t('proto_tcp_desc') },
+    { value: 'UDP',  label: 'UDP',      desc: t('proto_udp_desc') },
+    { value: 'BOTH', label: 'TCP+UDP',  desc: t('proto_both_desc') },
+  ];
+
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal">
-        <h2>{isEdit ? 'Edit Rule' : 'New Rule'}</h2>
-        <p className="subtitle">{isEdit ? 'Update forwarding configuration' : 'Configure a port forwarding rule'}</p>
+        <h2>{isEdit ? t('rule_edit_title') : t('rule_new_title')}</h2>
+        <p className="subtitle">{isEdit ? t('rule_edit_subtitle') : t('rule_new_subtitle')}</p>
         {error && <div className="alert alert-error">{error}</div>}
         <form onSubmit={handleSubmit}>
 
           <div className="field">
-            <label>Name <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optional)</span></label>
+            <label>{t('field_name')} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>{t('field_optional')}</span></label>
             <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="My Server" />
           </div>
 
-          {/* Protocol selector */}
           <div className="field">
-            <label>Protocol</label>
+            <label>{t('field_protocol')}</label>
             <div style={{ display: 'flex', gap: 8 }}>
               {PROTOCOLS.map(p => (
-                <label
-                  key={p.value}
-                  style={{
-                    flex: 1, cursor: 'pointer',
-                    padding: '10px 12px',
-                    borderRadius: 'var(--radius)',
-                    border: `1.5px solid ${form.protocol === p.value ? 'var(--primary)' : 'var(--border)'}`,
-                    background: form.protocol === p.value ? 'rgba(59,130,246,.12)' : 'var(--bg)',
-                    transition: 'all .15s',
-                  }}
-                >
-                  <input
-                    type="radio" name="protocol" value={p.value}
-                    checked={form.protocol === p.value}
-                    onChange={() => set('protocol', p.value)}
-                    style={{ display: 'none' }}
-                  />
+                <label key={p.value} style={{
+                  flex: 1, cursor: 'pointer', padding: '10px 12px',
+                  borderRadius: 'var(--radius)',
+                  border: `1.5px solid ${form.protocol === p.value ? 'var(--primary)' : 'var(--border)'}`,
+                  background: form.protocol === p.value ? 'rgba(59,130,246,.12)' : 'var(--bg)',
+                  transition: 'all .15s',
+                }}>
+                  <input type="radio" name="protocol" value={p.value}
+                    checked={form.protocol === p.value} onChange={() => set('protocol', p.value)}
+                    style={{ display: 'none' }} />
                   <div style={{ fontWeight: 700, fontSize: 13, color: form.protocol === p.value ? 'var(--primary)' : 'var(--text)' }}>
                     {p.label}
                   </div>
@@ -71,15 +65,15 @@ export default function RuleModal({ rule, onSave, onClose, loading, error }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: 12 }}>
             <div className="field" style={{ margin: 0 }}>
-              <label>Listen Port</label>
+              <label>{t('field_listen_port')}</label>
               <input type="number" min="1" max="65535" required value={form.listenPort} onChange={e => set('listenPort', e.target.value)} placeholder="8080" />
             </div>
             <div className="field" style={{ margin: 0 }}>
-              <label>Target Host</label>
+              <label>{t('field_target_host')}</label>
               <input required value={form.targetHost} onChange={e => set('targetHost', e.target.value)} placeholder="10.0.0.5" />
             </div>
             <div className="field" style={{ margin: 0 }}>
-              <label>Target Port</label>
+              <label>{t('field_target_port')}</label>
               <input type="number" min="1" max="65535" required value={form.targetPort} onChange={e => set('targetPort', e.target.value)} placeholder="80" />
             </div>
           </div>
@@ -90,14 +84,14 @@ export default function RuleModal({ rule, onSave, onClose, loading, error }) {
               <span className="slider"></span>
             </label>
             <div>
-              <div style={{ fontWeight: 600, fontSize: 13 }}>Enable immediately</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>Start forwarding traffic when saved</div>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>{t('enable_label')}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{t('enable_hint')}</div>
             </div>
           </div>
 
           {form.listenPort && form.targetHost && form.targetPort && (
             <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(59,130,246,.1)', borderRadius: 'var(--radius)', border: '1px solid rgba(59,130,246,.2)' }}>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Preview</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{t('preview_label')}</div>
               <div className="route">
                 <span style={{ fontSize: 11, color: 'var(--text-muted)', background: 'var(--surface2)', padding: '1px 6px', borderRadius: 4, marginRight: 4 }}>{form.protocol}</span>
                 <span>0.0.0.0:</span><span className="route-port">{form.listenPort}</span>
@@ -108,9 +102,9 @@ export default function RuleModal({ rule, onSave, onClose, loading, error }) {
           )}
 
           <div className="modal-footer">
-            <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
+            <button type="button" className="btn btn-ghost" onClick={onClose}>{t('btn_cancel')}</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Saving…' : isEdit ? 'Update Rule' : 'Create Rule'}
+              {loading ? t('btn_saving') : isEdit ? t('btn_update_rule') : t('btn_create_rule')}
             </button>
           </div>
         </form>
