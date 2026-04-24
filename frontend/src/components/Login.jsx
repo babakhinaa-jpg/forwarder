@@ -25,14 +25,23 @@ export default function Login({ onLogin }) {
   return (
     <div className="login-wrap">
       <div className="login-card">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12h14M12 5l7 7-7 7"/>
-          </svg>
-          <div>
-            <h1>Port Forwarder</h1>
-            <p>Sign in to manage forwarding rules</p>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 28 }}>
+          <div style={{
+            background: 'white',
+            borderRadius: 16,
+            width: 72,
+            height: 72,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            marginBottom: 16,
+            boxShadow: '0 4px 24px rgba(0,0,0,.25)',
+          }}>
+            <img src="/logo.jpg" alt="logo" style={{ width: 70, height: 70, objectFit: 'cover' }} />
           </div>
+          <h1>Port Forwarder</h1>
+          <p>Sign in to manage forwarding rules</p>
         </div>
         {error && <div className="alert alert-error">{error}</div>}
         <form onSubmit={handleSubmit}>

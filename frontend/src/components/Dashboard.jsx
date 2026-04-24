@@ -138,9 +138,20 @@ export default function Dashboard({ username, onLogout }) {
     <div className="layout">
       <header className="header">
         <div className="header-logo">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12h14M12 5l7 7-7 7"/>
-          </svg>
+          <div style={{
+            background: 'white',
+            borderRadius: 8,
+            width: 36,
+            height: 36,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            flexShrink: 0,
+            boxShadow: '0 0 0 1px rgba(255,255,255,.15)',
+          }}>
+            <img src="/logo.jpg" alt="logo" style={{ width: 34, height: 34, objectFit: 'cover' }} />
+          </div>
           Port Forwarder
         </div>
         <div className="header-actions">
