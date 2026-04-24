@@ -41,7 +41,7 @@ export default function RuleModal({ rule, onSave, onClose, loading, error }) {
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal">
+      <div className="modal" style={rangeMode ? { maxWidth: 580 } : {}}>
         <h2>{isEdit ? t('rule_edit_title') : t('rule_new_title')}</h2>
         <p className="subtitle">{isEdit ? t('rule_edit_subtitle') : t('rule_new_subtitle')}</p>
         {error && <div className="alert alert-error">{error}</div>}
@@ -114,23 +114,23 @@ export default function RuleModal({ rule, onSave, onClose, loading, error }) {
           )}
 
           {/* Ports */}
-          <div style={{ display: 'grid', gridTemplateColumns: rangeMode ? '1fr 1fr 2fr 1fr' : '1fr 2fr 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: rangeMode ? 'minmax(80px,1fr) minmax(80px,1fr) minmax(120px,2fr) minmax(80px,1fr)' : '1fr 2fr 1fr', gap: 12 }}>
             <div className="field" style={{ margin: 0 }}>
-              <label>{rangeMode ? t('range_from') : t('field_listen_port')}</label>
+              <label style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rangeMode ? t('range_from') : t('field_listen_port')}</label>
               <input type="number" min="1" max="65535" required value={form.listenPort} onChange={e => set('listenPort', e.target.value)} placeholder="8080" />
             </div>
             {rangeMode && (
               <div className="field" style={{ margin: 0 }}>
-                <label>{t('range_to')}</label>
+                <label style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('range_to')}</label>
                 <input type="number" min="1" max="65535" required={rangeMode} value={form.portRangeEnd} onChange={e => set('portRangeEnd', e.target.value)} placeholder="8090" />
               </div>
             )}
             <div className="field" style={{ margin: 0 }}>
-              <label>{t('field_target_host')}</label>
+              <label style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('field_target_host')}</label>
               <input required value={form.targetHost} onChange={e => set('targetHost', e.target.value)} placeholder="10.0.0.5" />
             </div>
             <div className="field" style={{ margin: 0 }}>
-              <label>{t('field_target_port')}</label>
+              <label style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('field_target_port')}</label>
               <input type="number" min="1" max="65535" required value={form.targetPort} onChange={e => set('targetPort', e.target.value)} placeholder="80" />
             </div>
           </div>

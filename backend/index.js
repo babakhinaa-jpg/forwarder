@@ -210,8 +210,20 @@ app.get('/api/stats', requireAuth, (req, res) => {
 });
 
 // ── System / Update ───────────────────────────────────────────────────────────
-const { execSync, spawn } = require('child_process');
+const { execFileSync, spawn } = require('child_process');
 const SOURCE_FILE = '/opt/port-forwarder/.source_path';
+
+// Safe env for running git/shell commands as the service user
+// HOME=/tmp prevents git from failing when the service user has no home dir
+const GIT_ENV = {
+  PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+  HOME: '/tmp',
+  LANG: 'C',
+};
+
+function runGit(args, cwd, timeout = 5000) {
+  return execFileSync('git', args, { cwd, timeout, env: GIT_ENV }).toString().trim();
+}
 
 function getSourcePath() {
   if (fs.existsSync(SOURCE_FILE)) return fs.readFileSync(SOURCE_FILE, 'utf8').trim();
@@ -225,11 +237,9 @@ app.get('/api/system/info', requireAuth, (req, res) => {
   const src = getSourcePath();
   const info = { installed: fs.existsSync(SOURCE_FILE), commit: null, commitDate: null, branch: null };
   if (src) {
-    try {
-      info.commit     = execSync('git rev-parse --short HEAD',                    { cwd: src, timeout: 5000 }).toString().trim();
-      info.commitDate = execSync('git log -1 --format=%cd --date=format:"%Y-%m-%d %H:%M"', { cwd: src, timeout: 5000 }).toString().trim();
-      info.branch     = execSync('git rev-parse --abbrev-ref HEAD',               { cwd: src, timeout: 5000 }).toString().trim();
-    } catch {}
+    try { info.commit     = runGit(['rev-parse', '--short', 'HEAD'], src); } catch {}
+    try { info.commitDate = runGit(['log', '-1', '--format=%cd', '--date=format:%Y-%m-%d %H:%M'], src); } catch {}
+    try { info.branch     = runGit(['rev-parse', '--abbrev-ref', 'HEAD'], src); } catch {}
   }
   res.json(info);
 });
@@ -238,12 +248,12 @@ app.get('/api/system/check-update', requireAuth, (req, res) => {
   const src = getSourcePath();
   if (!src) return res.json({ available: false, error: 'no_source' });
   try {
-    execSync('git fetch --quiet', { cwd: src, timeout: 15000 });
-    const local  = execSync('git rev-parse HEAD',  { cwd: src }).toString().trim();
-    const remote = execSync('git rev-parse @{u}',  { cwd: src }).toString().trim();
+    runGit(['fetch', '--quiet'], src, 15000);
+    const local  = runGit(['rev-parse', 'HEAD'], src);
+    const remote = runGit(['rev-parse', '@{u}'], src);
     res.json({ available: local !== remote, local: local.slice(0,7), remote: remote.slice(0,7) });
   } catch (e) {
-    res.json({ available: false, error: e.message.slice(0, 120) });
+    res.json({ available: false, error: e.message.slice(0, 200) });
   }
 });
 
@@ -259,14 +269,15 @@ app.post('/api/system/update', requireAuth, (req, res) => {
   const send = (data) => { try { res.write(`data: ${JSON.stringify(data)}\n\n`); } catch {} };
 
   const updateScript = '/opt/port-forwarder/update.sh';
+  const spawnEnv = { ...GIT_ENV, npm_config_cache: '/tmp/.npm' };
   let proc;
 
   if (fs.existsSync(updateScript)) {
-    proc = spawn('bash', [updateScript], { env: { ...process.env, PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' } });
+    proc = spawn('bash', [updateScript], { env: spawnEnv });
   } else {
-    // dev mode: just pull + rebuild frontend
+    // dev mode: pull + rebuild frontend
     const cmd = `cd "${src}" && git pull && cd frontend && npm ci --silent && npm run build && echo "=== Done — restart server to apply ==="`;
-    proc = spawn('bash', ['-c', cmd], { env: process.env });
+    proc = spawn('bash', ['-c', cmd], { env: spawnEnv });
   }
 
   proc.stdout.on('data', (c) => send({ type: 'log', text: c.toString() }));
