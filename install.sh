@@ -131,7 +131,15 @@ ok "Backend dependencies installed"
 info "Installing to ${INSTALL_DIR}..."
 mkdir -p "$INSTALL_DIR"
 
-# Copy backend (exclude node_modules — will copy separately)
+# Preserve existing rules and credentials on reinstall / upgrade
+CONFIG_BACKUP=""
+if [[ -f "$INSTALL_DIR/backend/data/config.json" ]]; then
+  CONFIG_BACKUP="$(mktemp)"
+  cp "$INSTALL_DIR/backend/data/config.json" "$CONFIG_BACKUP"
+  info "Existing rules backed up — will be restored after file copy"
+fi
+
+# Copy backend
 rm -rf "$INSTALL_DIR/backend"
 mkdir -p "$INSTALL_DIR/backend"
 cp -a "$SRC_DIR/backend/." "$INSTALL_DIR/backend/"
@@ -141,8 +149,16 @@ rm -rf "$INSTALL_DIR/frontend/dist"
 mkdir -p "$INSTALL_DIR/frontend"
 cp -a "$SRC_DIR/frontend/dist" "$INSTALL_DIR/frontend/dist"
 
-# Ensure data dir is writable by service user (rules + credentials persist here)
+# Ensure data dir exists and is writable by service user
 mkdir -p "$INSTALL_DIR/backend/data"
+
+# Restore rules/credentials if they existed before
+if [[ -n "$CONFIG_BACKUP" ]]; then
+  cp "$CONFIG_BACKUP" "$INSTALL_DIR/backend/data/config.json"
+  rm -f "$CONFIG_BACKUP"
+  ok "Rules and credentials restored"
+fi
+
 chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/backend/data"
 
 # Save source path so the web UI update button knows where to git pull from
@@ -154,19 +170,33 @@ ok "Files installed to ${INSTALL_DIR}"
 info "Creating update script..."
 cat > "$INSTALL_DIR/update.sh" <<'UPDSCRIPT'
 #!/usr/bin/env bash
-# Called by the web UI "Update now" button — runs as the service user
+# Called by the web UI "Update now" button
 set -euo pipefail
-SRC_DIR="$(cat /opt/port-forwarder/.source_path)"
+DEST=/opt/port-forwarder
+SRC_DIR="$(cat "$DEST/.source_path")"
+
 echo "=== Pulling latest code from $SRC_DIR ==="
 git -C "$SRC_DIR" pull --ff-only
-echo "=== Installing frontend dependencies ==="
+
+echo "=== Building frontend ==="
 cd "$SRC_DIR/frontend"
 npm ci --silent
-echo "=== Building frontend ==="
 npm run build --silent
-echo "=== Copying files ==="
-cp -a "$SRC_DIR/frontend/dist/." /opt/port-forwarder/frontend/dist/
-cp -a "$SRC_DIR/backend/." /opt/port-forwarder/backend/
+
+echo "=== Backing up rules and credentials ==="
+TMPDATA="$(mktemp)"
+[[ -f "$DEST/backend/data/config.json" ]] && cp "$DEST/backend/data/config.json" "$TMPDATA"
+
+echo "=== Installing new files ==="
+cp -a "$SRC_DIR/frontend/dist/." "$DEST/frontend/dist/"
+cp -a "$SRC_DIR/backend/." "$DEST/backend/"
+
+echo "=== Restoring rules and credentials ==="
+mkdir -p "$DEST/backend/data"
+[[ -s "$TMPDATA" ]] && cp "$TMPDATA" "$DEST/backend/data/config.json"
+rm -f "$TMPDATA"
+chown -R port-forwarder:port-forwarder "$DEST/backend/data"
+
 echo "=== Done — restart the service to apply ==="
 UPDSCRIPT
 chmod +x "$INSTALL_DIR/update.sh"

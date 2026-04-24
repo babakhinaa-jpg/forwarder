@@ -11,6 +11,7 @@ export default function RuleModal({ rule, onSave, onClose, loading, error }) {
     targetPort: rule?.targetPort || '',
     protocol: rule?.protocol || 'TCP',
     enabled: rule?.enabled !== false,
+    rangeTarget: rule?.rangeTarget || 'expand',
   });
   const [rangeMode, setRangeMode] = useState(!!(rule?.portRangeEnd));
 
@@ -23,6 +24,7 @@ export default function RuleModal({ rule, onSave, onClose, loading, error }) {
       listenPort: Number(form.listenPort),
       targetPort: Number(form.targetPort),
       portRangeEnd: rangeMode && form.portRangeEnd ? Number(form.portRangeEnd) : undefined,
+      rangeTarget: rangeMode ? form.rangeTarget : undefined,
     };
     onSave(payload);
   }
@@ -73,7 +75,7 @@ export default function RuleModal({ rule, onSave, onClose, loading, error }) {
           </div>
 
           {/* Port range toggle */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <label className="switch">
               <input type="checkbox" checked={rangeMode} onChange={e => { setRangeMode(e.target.checked); if (!e.target.checked) set('portRangeEnd', ''); }} />
               <span className="slider"></span>
@@ -81,6 +83,35 @@ export default function RuleModal({ rule, onSave, onClose, loading, error }) {
             <span style={{ fontSize: 13, fontWeight: 600 }}>{t('range_mode')}</span>
             {rangeSize && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 4 }}>({rangeSize} {t('range_ports')})</span>}
           </div>
+
+          {/* Range target mode */}
+          {rangeMode && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              {[
+                { value: 'expand', icon: '↔', label: t('range_expand_label'), example: '8000–8010 → 9000–9010' },
+                { value: 'single', icon: '→', label: t('range_single_label'), example: '8000–8010 → 9000' },
+              ].map(opt => (
+                <label key={opt.value} style={{
+                  flex: 1, cursor: 'pointer', padding: '8px 12px',
+                  borderRadius: 'var(--radius)',
+                  border: `1.5px solid ${form.rangeTarget === opt.value ? 'var(--primary)' : 'var(--border)'}`,
+                  background: form.rangeTarget === opt.value ? 'rgba(59,130,246,.12)' : 'var(--bg)',
+                  transition: 'all .15s',
+                }}>
+                  <input type="radio" name="rangeTarget" value={opt.value}
+                    checked={form.rangeTarget === opt.value}
+                    onChange={() => set('rangeTarget', opt.value)}
+                    style={{ display: 'none' }} />
+                  <div style={{ fontWeight: 700, fontSize: 12, color: form.rangeTarget === opt.value ? 'var(--primary)' : 'var(--text)' }}>
+                    {opt.icon} {opt.label}
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, fontFamily: 'monospace' }}>
+                    {opt.example}
+                  </div>
+                </label>
+              ))}
+            </div>
+          )}
 
           {/* Ports */}
           <div style={{ display: 'grid', gridTemplateColumns: rangeMode ? '1fr 1fr 2fr 1fr' : '1fr 2fr 1fr', gap: 12 }}>
@@ -128,7 +159,8 @@ export default function RuleModal({ rule, onSave, onClose, loading, error }) {
                 </span>
                 <span className="route-arrow">→</span>
                 <span className="route-host">
-                  {form.targetHost}:{form.targetPort}{isRange ? `-${Number(form.targetPort) + rangeSize - 1}` : ''}
+                  {form.targetHost}:{form.targetPort}
+                  {isRange && form.rangeTarget !== 'single' ? `-${Number(form.targetPort) + rangeSize - 1}` : ''}
                 </span>
               </div>
             </div>

@@ -25,7 +25,7 @@ class Forwarder extends EventEmitter {
       const ports = new Map();
 
       for (let p = from; p <= to; p++) {
-        const offset = p - from;
+        const offset = rule.rangeTarget === 'single' ? 0 : p - from;
         const sub = { ...rule, listenPort: p, targetPort: Number(rule.targetPort) + offset };
         const entry = {};
         if (proto === 'TCP' || proto === 'BOTH') entry.tcp = this._startTCP(sub);

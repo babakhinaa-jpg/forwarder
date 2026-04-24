@@ -93,7 +93,7 @@ function validatePorts(from, to, existingRules, excludeId) {
 }
 
 app.post('/api/rules', requireAuth, (req, res) => {
-  const { name, listenPort, portRangeEnd, targetHost, targetPort, enabled, protocol } = req.body || {};
+  const { name, listenPort, portRangeEnd, targetHost, targetPort, enabled, protocol, rangeTarget } = req.body || {};
   if (!listenPort || !targetHost || !targetPort) {
     return res.status(400).json({ error: 'listenPort, targetHost, targetPort are required' });
   }
@@ -107,6 +107,7 @@ app.post('/api/rules', requireAuth, (req, res) => {
   const lp = Number(listenPort);
   const re = portRangeEnd ? Number(portRangeEnd) : null;
   const isRange = re && re > lp;
+  const rt = rangeTarget === 'single' ? 'single' : 'expand';
 
   const rule = {
     id: uuidv4(),
@@ -114,7 +115,7 @@ app.post('/api/rules', requireAuth, (req, res) => {
       ? `Range ${lp}-${re}→${targetHost}:${targetPort}`
       : `Rule ${lp}→${targetHost}:${targetPort}`),
     listenPort: lp,
-    ...(isRange && { portRangeEnd: re }),
+    ...(isRange && { portRangeEnd: re, rangeTarget: rt }),
     targetHost,
     targetPort: Number(targetPort),
     protocol: proto,
@@ -133,7 +134,7 @@ app.put('/api/rules/:id', requireAuth, (req, res) => {
   const idx = rules.findIndex((r) => r.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Rule not found' });
 
-  const { name, listenPort, portRangeEnd, targetHost, targetPort, enabled, protocol } = req.body;
+  const { name, listenPort, portRangeEnd, targetHost, targetPort, enabled, protocol, rangeTarget } = req.body;
   const updated = { ...rules[idx] };
 
   if (name !== undefined) updated.name = name;
@@ -144,13 +145,16 @@ app.put('/api/rules/:id', requireAuth, (req, res) => {
     if (portErr) return res.status(400).json({ error: portErr });
     updated.listenPort = lp;
     if (re && re > lp) updated.portRangeEnd = Number(re);
-    else delete updated.portRangeEnd;
+    else { delete updated.portRangeEnd; delete updated.rangeTarget; }
   }
   if (targetHost !== undefined) updated.targetHost = targetHost;
   if (targetPort !== undefined) updated.targetPort = Number(targetPort);
   if (enabled !== undefined) updated.enabled = enabled;
   if (protocol !== undefined && ['TCP', 'UDP', 'BOTH'].includes(protocol.toUpperCase())) {
     updated.protocol = protocol.toUpperCase();
+  }
+  if (rangeTarget !== undefined && updated.portRangeEnd) {
+    updated.rangeTarget = rangeTarget === 'single' ? 'single' : 'expand';
   }
 
   // Restart forwarder if anything changed

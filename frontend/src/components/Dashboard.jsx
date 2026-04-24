@@ -238,7 +238,9 @@ export default function Dashboard({ username, onLogout }) {
                         <span className="route-arrow">→</span>
                         <span className="route-host">
                           {rule.targetHost}:{rule.targetPort}
-                          {rule.portRangeEnd ? `–${rule.targetPort + (rule.portRangeEnd - rule.listenPort)}` : ''}
+                          {rule.portRangeEnd && rule.rangeTarget !== 'single'
+                            ? `–${rule.targetPort + (rule.portRangeEnd - rule.listenPort)}`
+                            : ''}
                         </span>
                       </div>
                     </td>
