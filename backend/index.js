@@ -210,56 +210,85 @@ app.get('/api/stats', requireAuth, (req, res) => {
 });
 
 // ── System / Update ───────────────────────────────────────────────────────────
-const { execFileSync, spawn } = require('child_process');
-const SOURCE_FILE = '/opt/port-forwarder/.source_path';
+const { spawn } = require('child_process');
+const https = require('https');
+const SOURCE_FILE   = '/opt/port-forwarder/.source_path';
+const BUILD_INFO    = '/opt/port-forwarder/.build-info';  // written by install.sh / update.sh
+const GITHUB_REPO   = 'babakhinaa-jpg/forwarder';
+const GITHUB_BRANCH = 'main';
 
-// Safe env for running git/shell commands as the service user
-// HOME=/tmp prevents git from failing when the service user has no home dir
-const GIT_ENV = {
-  PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
-  HOME: '/tmp',
-  LANG: 'C',
-};
-
-function runGit(args, cwd, timeout = 5000) {
-  return execFileSync('git', args, { cwd, timeout, env: GIT_ENV }).toString().trim();
+// Read version info from file written at install/update time (no subprocess needed)
+function readBuildInfo() {
+  if (fs.existsSync(BUILD_INFO)) {
+    try { return JSON.parse(fs.readFileSync(BUILD_INFO, 'utf8')); } catch {}
+  }
+  return null;
 }
 
-function getSourcePath() {
-  if (fs.existsSync(SOURCE_FILE)) return fs.readFileSync(SOURCE_FILE, 'utf8').trim();
-  // dev fallback: parent of backend dir
-  const dev = path.join(__dirname, '..');
-  if (fs.existsSync(path.join(dev, '.git'))) return dev;
+// Fallback: dev mode reads .build-info from the repo root
+function readDevBuildInfo() {
+  const devFile = path.join(__dirname, '..', '.build-info');
+  if (fs.existsSync(devFile)) {
+    try { return JSON.parse(fs.readFileSync(devFile, 'utf8')); } catch {}
+  }
   return null;
 }
 
 app.get('/api/system/info', requireAuth, (req, res) => {
-  const src = getSourcePath();
-  const info = { installed: fs.existsSync(SOURCE_FILE), commit: null, commitDate: null, branch: null };
-  if (src) {
-    try { info.commit     = runGit(['rev-parse', '--short', 'HEAD'], src); } catch {}
-    try { info.commitDate = runGit(['log', '-1', '--format=%cd', '--date=format:%Y-%m-%d %H:%M'], src); } catch {}
-    try { info.branch     = runGit(['rev-parse', '--abbrev-ref', 'HEAD'], src); } catch {}
+  const installed = fs.existsSync(SOURCE_FILE);
+  const info = { installed, commit: null, commitDate: null, branch: null };
+  const bi = readBuildInfo() || readDevBuildInfo();
+  if (bi) {
+    info.commit     = bi.commit || null;
+    info.branch     = bi.branch || null;
+    info.commitDate = bi.date   || null;
   }
   res.json(info);
 });
 
+// check-update uses GitHub API — no subprocess, works in restricted envs
 app.get('/api/system/check-update', requireAuth, (req, res) => {
-  const src = getSourcePath();
-  if (!src) return res.json({ available: false, error: 'no_source' });
-  try {
-    runGit(['fetch', '--quiet'], src, 15000);
-    const local  = runGit(['rev-parse', 'HEAD'], src);
-    const remote = runGit(['rev-parse', '@{u}'], src);
-    res.json({ available: local !== remote, local: local.slice(0,7), remote: remote.slice(0,7) });
-  } catch (e) {
-    res.json({ available: false, error: e.message.slice(0, 200) });
+  const bi = readBuildInfo() || readDevBuildInfo();
+  const localCommit = bi?.commit || null;
+
+  if (!localCommit) {
+    return res.json({ available: false, error: 'Local version unknown — reinstall via install.sh' });
   }
+
+  const options = {
+    hostname: 'api.github.com',
+    path: `/repos/${GITHUB_REPO}/commits/${GITHUB_BRANCH}`,
+    headers: { 'User-Agent': 'port-forwarder/1.0', Accept: 'application/vnd.github.v3+json' },
+    timeout: 10000,
+  };
+
+  const apiReq = https.get(options, (apiRes) => {
+    let body = '';
+    apiRes.on('data', d => body += d);
+    apiRes.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        if (!data.sha) {
+          return res.json({ available: false, error: `GitHub: ${data.message || 'unknown error'}` });
+        }
+        const remoteCommit = data.sha.slice(0, 7);
+        res.json({
+          available: localCommit.slice(0, 7) !== remoteCommit,
+          local: localCommit.slice(0, 7),
+          remote: remoteCommit,
+        });
+      } catch (e) {
+        res.json({ available: false, error: 'Invalid GitHub API response' });
+      }
+    });
+  });
+  apiReq.on('error', (e) => res.json({ available: false, error: e.message }));
+  apiReq.on('timeout', () => { apiReq.destroy(); res.json({ available: false, error: 'GitHub API timeout' }); });
 });
 
 app.post('/api/system/update', requireAuth, (req, res) => {
-  const src = getSourcePath();
-  if (!src) return res.status(400).json({ error: 'Source path not found. Install via install.sh.' });
+  const installed = fs.existsSync(SOURCE_FILE);
+  if (!installed) return res.status(400).json({ error: 'Not installed via install.sh' });
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -269,19 +298,17 @@ app.post('/api/system/update', requireAuth, (req, res) => {
   const send = (data) => { try { res.write(`data: ${JSON.stringify(data)}\n\n`); } catch {} };
 
   const updateScript = '/opt/port-forwarder/update.sh';
-  const spawnEnv = { ...GIT_ENV, npm_config_cache: '/tmp/.npm' };
-  let proc;
+  const spawnEnv = {
+    PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+    HOME: '/tmp',
+    LANG: 'C',
+    npm_config_cache: '/tmp/.npm',
+  };
 
-  if (fs.existsSync(updateScript)) {
-    proc = spawn('bash', [updateScript], { env: spawnEnv });
-  } else {
-    // dev mode: pull + rebuild frontend
-    const cmd = `cd "${src}" && git pull && cd frontend && npm ci --silent && npm run build && echo "=== Done — restart server to apply ==="`;
-    proc = spawn('bash', ['-c', cmd], { env: spawnEnv });
-  }
-
+  const proc = spawn('sudo', ['bash', updateScript], { env: spawnEnv });
   proc.stdout.on('data', (c) => send({ type: 'log', text: c.toString() }));
   proc.stderr.on('data', (c) => send({ type: 'log', text: c.toString() }));
+  proc.on('error', (e) => { send({ type: 'log', text: `Error: ${e.message}\n` }); send({ type: 'done', code: 1, success: false }); res.end(); });
   proc.on('close', (code) => { send({ type: 'done', code, success: code === 0 }); res.end(); });
   req.on('close', () => { if (!proc.killed) proc.kill(); });
 });

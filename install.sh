@@ -164,13 +164,20 @@ chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/backend/data"
 # Save source path so the web UI update button knows where to git pull from
 echo "$SRC_DIR" > "$INSTALL_DIR/.source_path"
 
+# Write build-info so the web server can show version without running git
+COMMIT=$(git -C "$SRC_DIR" rev-parse --short HEAD 2>/dev/null || echo "")
+BRANCH=$(git -C "$SRC_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+BUILD_DATE=$(git -C "$SRC_DIR" log -1 --format="%cd" --date=format:"%Y-%m-%d %H:%M" 2>/dev/null || date "+%Y-%m-%d %H:%M")
+printf '{"commit":"%s","branch":"%s","date":"%s"}\n' "$COMMIT" "$BRANCH" "$BUILD_DATE" > "$INSTALL_DIR/.build-info"
+ok "Build info written (commit: ${COMMIT:-unknown})"
+
 ok "Files installed to ${INSTALL_DIR}"
 
 # ── 6b. Create update.sh script ──────────────────────────────────────────────
 info "Creating update script..."
 cat > "$INSTALL_DIR/update.sh" <<'UPDSCRIPT'
 #!/usr/bin/env bash
-# Called by the web UI "Update now" button
+# Called by the web UI "Update now" button (runs as root via update mechanism)
 set -euo pipefail
 DEST=/opt/port-forwarder
 SRC_DIR="$(cat "$DEST/.source_path")"
@@ -197,16 +204,25 @@ mkdir -p "$DEST/backend/data"
 rm -f "$TMPDATA"
 chown -R port-forwarder:port-forwarder "$DEST/backend/data"
 
+echo "=== Updating build info ==="
+COMMIT=$(git -C "$SRC_DIR" rev-parse --short HEAD 2>/dev/null || echo "")
+BRANCH=$(git -C "$SRC_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+BUILD_DATE=$(git -C "$SRC_DIR" log -1 --format="%cd" --date=format:"%Y-%m-%d %H:%M" 2>/dev/null || date "+%Y-%m-%d %H:%M")
+printf '{"commit":"%s","branch":"%s","date":"%s"}\n' "$COMMIT" "$BRANCH" "$BUILD_DATE" > "$DEST/.build-info"
+
 echo "=== Done — restart the service to apply ==="
 UPDSCRIPT
 chmod +x "$INSTALL_DIR/update.sh"
 ok "Update script created at ${INSTALL_DIR}/update.sh"
 
-# ── 6c. Sudoers rule for service restart ──────────────────────────────────────
+# ── 6c. Sudoers rules: restart + update ──────────────────────────────────────
 SUDOERS_FILE="/etc/sudoers.d/port-forwarder"
-echo "${SERVICE_USER} ALL=(ALL) NOPASSWD: /bin/systemctl restart ${SERVICE_NAME}" > "$SUDOERS_FILE"
+{
+  echo "${SERVICE_USER} ALL=(ALL) NOPASSWD: /bin/systemctl restart ${SERVICE_NAME}"
+  echo "${SERVICE_USER} ALL=(ALL) NOPASSWD: ${INSTALL_DIR}/update.sh"
+} > "$SUDOERS_FILE"
 chmod 440 "$SUDOERS_FILE"
-ok "Sudoers rule created (service user can restart itself)"
+ok "Sudoers rules created (restart + update)"
 
 # ── 7. Create systemd service ─────────────────────────────────────────────────
 info "Creating systemd service..."
