@@ -75,25 +75,46 @@ app.get('/api/rules', requireAuth, (req, res) => {
   res.json(result);
 });
 
+// ── helpers ───────────────────────────────────────────────────────────────────
+function validatePorts(from, to, existingRules, excludeId) {
+  from = Number(from); to = to ? Number(to) : from;
+  if (from < 1 || from > 65535 || to < 1 || to > 65535) return 'Port out of range (1-65535)';
+  if (to < from) return 'Range end must be >= range start';
+  if (to - from >= 500) return 'Range too large (max 500 ports)';
+  for (let p = from; p <= to; p++) {
+    const conflict = existingRules.find((r) => {
+      if (r.id === excludeId) return false;
+      const rEnd = r.portRangeEnd || r.listenPort;
+      return p >= r.listenPort && p <= rEnd;
+    });
+    if (conflict) return `Port ${p} already used by rule "${conflict.name}"`;
+  }
+  return null;
+}
+
 app.post('/api/rules', requireAuth, (req, res) => {
-  const { name, listenPort, targetHost, targetPort, enabled, protocol } = req.body || {};
+  const { name, listenPort, portRangeEnd, targetHost, targetPort, enabled, protocol } = req.body || {};
   if (!listenPort || !targetHost || !targetPort) {
     return res.status(400).json({ error: 'listenPort, targetHost, targetPort are required' });
-  }
-  if (listenPort < 1 || listenPort > 65535 || targetPort < 1 || targetPort > 65535) {
-    return res.status(400).json({ error: 'Port out of range (1-65535)' });
   }
   const proto = ['TCP', 'UDP', 'BOTH'].includes((protocol || '').toUpperCase())
     ? protocol.toUpperCase() : 'TCP';
 
   const rules = config.getRules();
-  const conflict = rules.find((r) => r.listenPort === Number(listenPort) && r.id !== req.body.id);
-  if (conflict) return res.status(400).json({ error: `Port ${listenPort} already in use by rule "${conflict.name || conflict.id}"` });
+  const portErr = validatePorts(listenPort, portRangeEnd, rules, null);
+  if (portErr) return res.status(400).json({ error: portErr });
+
+  const lp = Number(listenPort);
+  const re = portRangeEnd ? Number(portRangeEnd) : null;
+  const isRange = re && re > lp;
 
   const rule = {
     id: uuidv4(),
-    name: name || `Rule ${listenPort}→${targetHost}:${targetPort}`,
-    listenPort: Number(listenPort),
+    name: name || (isRange
+      ? `Range ${lp}-${re}→${targetHost}:${targetPort}`
+      : `Rule ${lp}→${targetHost}:${targetPort}`),
+    listenPort: lp,
+    ...(isRange && { portRangeEnd: re }),
     targetHost,
     targetPort: Number(targetPort),
     protocol: proto,
@@ -103,11 +124,7 @@ app.post('/api/rules', requireAuth, (req, res) => {
 
   rules.push(rule);
   config.saveRules(rules);
-
-  if (rule.enabled) {
-    try { forwarder.start(rule); } catch (e) { /* port may be busy, rule saved anyway */ }
-  }
-
+  if (rule.enabled) { try { forwarder.start(rule); } catch {} }
   res.status(201).json({ ...rule, running: forwarder.isRunning(rule.id) });
 });
 
@@ -116,14 +133,18 @@ app.put('/api/rules/:id', requireAuth, (req, res) => {
   const idx = rules.findIndex((r) => r.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Rule not found' });
 
-  const { name, listenPort, targetHost, targetPort, enabled, protocol } = req.body;
+  const { name, listenPort, portRangeEnd, targetHost, targetPort, enabled, protocol } = req.body;
   const updated = { ...rules[idx] };
 
   if (name !== undefined) updated.name = name;
-  if (listenPort !== undefined) {
-    const conflict = rules.find((r) => r.listenPort === Number(listenPort) && r.id !== req.params.id);
-    if (conflict) return res.status(400).json({ error: `Port ${listenPort} already in use` });
-    updated.listenPort = Number(listenPort);
+  if (listenPort !== undefined || portRangeEnd !== undefined) {
+    const lp = listenPort !== undefined ? Number(listenPort) : updated.listenPort;
+    const re = portRangeEnd !== undefined ? (portRangeEnd || null) : updated.portRangeEnd;
+    const portErr = validatePorts(lp, re, rules, req.params.id);
+    if (portErr) return res.status(400).json({ error: portErr });
+    updated.listenPort = lp;
+    if (re && re > lp) updated.portRangeEnd = Number(re);
+    else delete updated.portRangeEnd;
   }
   if (targetHost !== undefined) updated.targetHost = targetHost;
   if (targetPort !== undefined) updated.targetPort = Number(targetPort);
@@ -182,6 +203,80 @@ app.get('/api/stats', requireAuth, (req, res) => {
     activeRules: Object.keys(stats).length,
     stats,
   });
+});
+
+// ── System / Update ───────────────────────────────────────────────────────────
+const { execSync, spawn } = require('child_process');
+const SOURCE_FILE = '/opt/port-forwarder/.source_path';
+
+function getSourcePath() {
+  if (fs.existsSync(SOURCE_FILE)) return fs.readFileSync(SOURCE_FILE, 'utf8').trim();
+  // dev fallback: parent of backend dir
+  const dev = path.join(__dirname, '..');
+  if (fs.existsSync(path.join(dev, '.git'))) return dev;
+  return null;
+}
+
+app.get('/api/system/info', requireAuth, (req, res) => {
+  const src = getSourcePath();
+  const info = { installed: fs.existsSync(SOURCE_FILE), commit: null, commitDate: null, branch: null };
+  if (src) {
+    try {
+      info.commit     = execSync('git rev-parse --short HEAD',                    { cwd: src, timeout: 5000 }).toString().trim();
+      info.commitDate = execSync('git log -1 --format=%cd --date=format:"%Y-%m-%d %H:%M"', { cwd: src, timeout: 5000 }).toString().trim();
+      info.branch     = execSync('git rev-parse --abbrev-ref HEAD',               { cwd: src, timeout: 5000 }).toString().trim();
+    } catch {}
+  }
+  res.json(info);
+});
+
+app.get('/api/system/check-update', requireAuth, (req, res) => {
+  const src = getSourcePath();
+  if (!src) return res.json({ available: false, error: 'no_source' });
+  try {
+    execSync('git fetch --quiet', { cwd: src, timeout: 15000 });
+    const local  = execSync('git rev-parse HEAD',  { cwd: src }).toString().trim();
+    const remote = execSync('git rev-parse @{u}',  { cwd: src }).toString().trim();
+    res.json({ available: local !== remote, local: local.slice(0,7), remote: remote.slice(0,7) });
+  } catch (e) {
+    res.json({ available: false, error: e.message.slice(0, 120) });
+  }
+});
+
+app.post('/api/system/update', requireAuth, (req, res) => {
+  const src = getSourcePath();
+  if (!src) return res.status(400).json({ error: 'Source path not found. Install via install.sh.' });
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const send = (data) => { try { res.write(`data: ${JSON.stringify(data)}\n\n`); } catch {} };
+
+  const updateScript = '/opt/port-forwarder/update.sh';
+  let proc;
+
+  if (fs.existsSync(updateScript)) {
+    proc = spawn('bash', [updateScript], { env: { ...process.env, PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' } });
+  } else {
+    // dev mode: just pull + rebuild frontend
+    const cmd = `cd "${src}" && git pull && cd frontend && npm ci --silent && npm run build && echo "=== Done — restart server to apply ==="`;
+    proc = spawn('bash', ['-c', cmd], { env: process.env });
+  }
+
+  proc.stdout.on('data', (c) => send({ type: 'log', text: c.toString() }));
+  proc.stderr.on('data', (c) => send({ type: 'log', text: c.toString() }));
+  proc.on('close', (code) => { send({ type: 'done', code, success: code === 0 }); res.end(); });
+  req.on('close', () => { if (!proc.killed) proc.kill(); });
+});
+
+app.post('/api/system/restart', requireAuth, (req, res) => {
+  if (!fs.existsSync(SOURCE_FILE)) return res.status(400).json({ error: 'Not installed via install.sh' });
+  res.json({ ok: true });
+  setTimeout(() => {
+    spawn('sudo', ['systemctl', 'restart', 'port-forwarder'], { detached: true, stdio: 'ignore' }).unref();
+  }, 500);
 });
 
 // ── SPA fallback ──────────────────────────────────────────────────────────────

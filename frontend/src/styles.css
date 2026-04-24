@@ -233,3 +233,4 @@ input:checked + .slider::before { transform: translateX(16px); }
   .header { padding: 0 16px; }
   th:nth-child(4), td:nth-child(4) { display: none; }
 }
+@keyframes spin { to { transform: rotate(360deg); } }

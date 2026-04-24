@@ -57,4 +57,18 @@ export const api = {
       method: 'POST',
       headers: authHeaders(),
     }).then(handleResponse),
+
+  // System
+  systemInfo: () =>
+    fetch(`${BASE}/system/info`, { headers: authHeaders() }).then(handleResponse),
+
+  checkUpdate: () =>
+    fetch(`${BASE}/system/check-update`, { headers: authHeaders() }).then(handleResponse),
+
+  // Returns fetch Response for SSE streaming (caller reads .body)
+  startUpdate: () =>
+    fetch(`${BASE}/system/update`, { method: 'POST', headers: authHeaders() }),
+
+  restartService: () =>
+    fetch(`${BASE}/system/restart`, { method: 'POST', headers: authHeaders() }).then(handleResponse),
 };

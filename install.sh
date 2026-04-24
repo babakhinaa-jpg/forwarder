@@ -145,7 +145,38 @@ cp -a "$SRC_DIR/frontend/dist" "$INSTALL_DIR/frontend/dist"
 mkdir -p "$INSTALL_DIR/backend/data"
 chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/backend/data"
 
+# Save source path so the web UI update button knows where to git pull from
+echo "$SRC_DIR" > "$INSTALL_DIR/.source_path"
+
 ok "Files installed to ${INSTALL_DIR}"
+
+# ── 6b. Create update.sh script ──────────────────────────────────────────────
+info "Creating update script..."
+cat > "$INSTALL_DIR/update.sh" <<'UPDSCRIPT'
+#!/usr/bin/env bash
+# Called by the web UI "Update now" button — runs as the service user
+set -euo pipefail
+SRC_DIR="$(cat /opt/port-forwarder/.source_path)"
+echo "=== Pulling latest code from $SRC_DIR ==="
+git -C "$SRC_DIR" pull --ff-only
+echo "=== Installing frontend dependencies ==="
+cd "$SRC_DIR/frontend"
+npm ci --silent
+echo "=== Building frontend ==="
+npm run build --silent
+echo "=== Copying files ==="
+cp -a "$SRC_DIR/frontend/dist/." /opt/port-forwarder/frontend/dist/
+cp -a "$SRC_DIR/backend/." /opt/port-forwarder/backend/
+echo "=== Done — restart the service to apply ==="
+UPDSCRIPT
+chmod +x "$INSTALL_DIR/update.sh"
+ok "Update script created at ${INSTALL_DIR}/update.sh"
+
+# ── 6c. Sudoers rule for service restart ──────────────────────────────────────
+SUDOERS_FILE="/etc/sudoers.d/port-forwarder"
+echo "${SERVICE_USER} ALL=(ALL) NOPASSWD: /bin/systemctl restart ${SERVICE_NAME}" > "$SUDOERS_FILE"
+chmod 440 "$SUDOERS_FILE"
+ok "Sudoers rule created (service user can restart itself)"
 
 # ── 7. Create systemd service ─────────────────────────────────────────────────
 info "Creating systemd service..."

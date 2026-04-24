@@ -4,6 +4,7 @@ import { useI18n } from '../i18n.jsx';
 import RuleModal from './RuleModal.jsx';
 import PasswordModal from './PasswordModal.jsx';
 import LangPicker from './LangPicker.jsx';
+import UpdateModal from './UpdateModal.jsx';
 
 function formatBytes(b) {
   if (!b) return '0 B';
@@ -64,6 +65,7 @@ export default function Dashboard({ username, onLogout }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editRule, setEditRule] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showUpdate, setShowUpdate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [modalError, setModalError] = useState('');
   const [toast, setToast] = useState(null);
@@ -145,6 +147,13 @@ export default function Dashboard({ username, onLogout }) {
         <div className="header-actions">
           <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{username}</span>
           <LangPicker />
+          <button className="btn btn-ghost" style={{ padding: '6px 12px' }} onClick={() => setShowUpdate(true)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+            {t('btn_update')}
+          </button>
           <button className="btn btn-ghost" style={{ padding: '6px 12px' }} onClick={() => setShowPassword(true)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
@@ -223,9 +232,14 @@ export default function Dashboard({ username, onLogout }) {
                     <td>
                       <div className="route">
                         <span style={{ color: 'var(--text-muted)' }}>:</span>
-                        <span className="route-port">{rule.listenPort}</span>
+                        <span className="route-port">
+                          {rule.listenPort}{rule.portRangeEnd ? `–${rule.portRangeEnd}` : ''}
+                        </span>
                         <span className="route-arrow">→</span>
-                        <span className="route-host">{rule.targetHost}:{rule.targetPort}</span>
+                        <span className="route-host">
+                          {rule.targetHost}:{rule.targetPort}
+                          {rule.portRangeEnd ? `–${rule.targetPort + (rule.portRangeEnd - rule.listenPort)}` : ''}
+                        </span>
                       </div>
                     </td>
                     <td><RuleStats stats={rule.stats} proto={rule.protocol || 'TCP'} /></td>
@@ -273,9 +287,10 @@ export default function Dashboard({ username, onLogout }) {
         </div>
       )}
 
-      {showAdd   && <RuleModal onSave={handleCreate} onClose={() => setShowAdd(false)} loading={saving} error={modalError} />}
-      {editRule  && <RuleModal rule={editRule} onSave={handleUpdate} onClose={() => setEditRule(null)} loading={saving} error={modalError} />}
+      {showAdd      && <RuleModal onSave={handleCreate} onClose={() => setShowAdd(false)} loading={saving} error={modalError} />}
+      {editRule     && <RuleModal rule={editRule} onSave={handleUpdate} onClose={() => setEditRule(null)} loading={saving} error={modalError} />}
       {showPassword && <PasswordModal onClose={() => setShowPassword(false)} />}
+      {showUpdate   && <UpdateModal onClose={() => setShowUpdate(false)} />}
     </div>
   );
 }

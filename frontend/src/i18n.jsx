@@ -34,6 +34,7 @@ const T = {
     upd_not_installed:'Update only works when installed via install.sh',upd_no_git:'Git info unavailable',
     toast_created:'Rule created',toast_updated:'Rule updated',toast_deleted:'Rule deleted',
     delete_confirm:'Delete rule "%s"?',loading:'Loading…',
+    range_mode:'Port Range',range_ports:'ports',range_from:'From',range_to:'To',
   },
   ru: {
     app_name:'Переадресация портов',login_subtitle:'Войдите для управления правилами',login_username:'Пользователь',login_password:'Пароль',login_submit:'Войти',login_submitting:'Вход…',login_hint:'По умолчанию: admin / password',
@@ -56,6 +57,7 @@ const T = {
     upd_not_installed:'Обновление работает только при установке через install.sh',upd_no_git:'Git-информация недоступна',
     toast_created:'Правило создано',toast_updated:'Правило обновлено',toast_deleted:'Правило удалено',
     delete_confirm:'Удалить правило «%s»?',loading:'Загрузка…',
+    range_mode:'Диапазон портов',range_ports:'портов',range_from:'С порта',range_to:'По порт',
   },
   zh: {
     app_name:'端口转发器',login_subtitle:'登录以管理转发规则',login_username:'用户名',login_password:'密码',login_submit:'登录',login_submitting:'登录中…',login_hint:'默认：admin / password',
@@ -78,6 +80,7 @@ const T = {
     upd_not_installed:'更新功能仅在通过install.sh安装时可用',upd_no_git:'Git信息不可用',
     toast_created:'规则已创建',toast_updated:'规则已更新',toast_deleted:'规则已删除',
     delete_confirm:'删除规则"%s"？',loading:'加载中…',
+    range_mode:'端口范围',range_ports:'个端口',range_from:'从',range_to:'到',
   },
   es: {
     app_name:'Reenvío de puertos',login_subtitle:'Inicia sesión para gestionar las reglas',login_username:'Usuario',login_password:'Contraseña',login_submit:'Iniciar sesión',login_submitting:'Iniciando…',login_hint:'Predeterminado: admin / password',
@@ -100,6 +103,7 @@ const T = {
     upd_not_installed:'La actualización solo funciona al instalar con install.sh',upd_no_git:'Git no disponible',
     toast_created:'Regla creada',toast_updated:'Regla actualizada',toast_deleted:'Regla eliminada',
     delete_confirm:'¿Eliminar regla "%s"?',loading:'Cargando…',
+    range_mode:'Rango de puertos',range_ports:'puertos',range_from:'Desde',range_to:'Hasta',
   },
   de: {
     app_name:'Port-Weiterleitung',login_subtitle:'Anmelden zur Verwaltung der Weiterleitungsregeln',login_username:'Benutzername',login_password:'Passwort',login_submit:'Anmelden',login_submitting:'Anmelden…',login_hint:'Standard: admin / password',
@@ -122,6 +126,7 @@ const T = {
     upd_not_installed:'Update funktioniert nur bei Installation über install.sh',upd_no_git:'Git-Info nicht verfügbar',
     toast_created:'Regel erstellt',toast_updated:'Regel aktualisiert',toast_deleted:'Regel gelöscht',
     delete_confirm:'Regel „%s" löschen?',loading:'Laden…',
+    range_mode:'Port-Bereich',range_ports:'Ports',range_from:'Von',range_to:'Bis',
   },
   fr: {
     app_name:'Redirecteur de ports',login_subtitle:'Connectez-vous pour gérer les règles de redirection',login_username:'Identifiant',login_password:'Mot de passe',login_submit:'Se connecter',login_submitting:'Connexion…',login_hint:'Par défaut : admin / password',
@@ -144,6 +149,7 @@ const T = {
     upd_not_installed:"La mise à jour ne fonctionne que lors de l'installation via install.sh",upd_no_git:'Git non disponible',
     toast_created:'Règle créée',toast_updated:'Règle mise à jour',toast_deleted:'Règle supprimée',
     delete_confirm:'Supprimer la règle « %s » ?',loading:'Chargement…',
+    range_mode:'Plage de ports',range_ports:'ports',range_from:'De',range_to:'À',
   },
   pt: {
     app_name:'Encaminhador de portas',login_subtitle:'Faça login para gerenciar as regras de encaminhamento',login_username:'Usuário',login_password:'Senha',login_submit:'Entrar',login_submitting:'Entrando…',login_hint:'Padrão: admin / password',
@@ -166,6 +172,7 @@ const T = {
     upd_not_installed:'A atualização só funciona quando instalado via install.sh',upd_no_git:'Git não disponível',
     toast_created:'Regra criada',toast_updated:'Regra atualizada',toast_deleted:'Regra excluída',
     delete_confirm:'Excluir regra "%s"?',loading:'Carregando…',
+    range_mode:'Faixa de portas',range_ports:'portas',range_from:'De',range_to:'Até',
   },
   uk: {
     app_name:'Переадресація портів',login_subtitle:'Увійдіть для управління правилами',login_username:'Користувач',login_password:'Пароль',login_submit:'Увійти',login_submitting:'Вхід…',login_hint:'За замовчуванням: admin / password',
@@ -188,6 +195,7 @@ const T = {
     upd_not_installed:'Оновлення працює лише при встановленні через install.sh',upd_no_git:'Git-інформація недоступна',
     toast_created:'Правило створено',toast_updated:'Правило оновлено',toast_deleted:'Правило видалено',
     delete_confirm:'Видалити правило «%s»?',loading:'Завантаження…',
+    range_mode:'Діапазон портів',range_ports:'портів',range_from:'З порту',range_to:'По порт',
   },
   ja: {
     app_name:'ポートフォワーダー',login_subtitle:'転送ルールを管理するにはサインイン',login_username:'ユーザー名',login_password:'パスワード',login_submit:'サインイン',login_submitting:'サインイン中…',login_hint:'デフォルト: admin / password',
@@ -210,6 +218,7 @@ const T = {
     upd_not_installed:'アップデートはinstall.shでインストールした場合のみ機能します',upd_no_git:'Git情報が利用できません',
     toast_created:'ルールを作成しました',toast_updated:'ルールを更新しました',toast_deleted:'ルールを削除しました',
     delete_confirm:'ルール「%s」を削除しますか？',loading:'読み込み中…',
+    range_mode:'ポート範囲',range_ports:'ポート',range_from:'から',range_to:'まで',
   },
 };
 
