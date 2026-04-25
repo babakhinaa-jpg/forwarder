@@ -114,25 +114,54 @@ export default function RuleModal({ rule, onSave, onClose, loading, error }) {
           )}
 
           {/* Ports */}
-          <div style={{ display: 'grid', gridTemplateColumns: rangeMode ? 'minmax(80px,1fr) minmax(80px,1fr) minmax(120px,2fr) minmax(80px,1fr)' : '1fr 2fr 1fr', gap: 12 }}>
+          {/* expand mode: 5 columns (listen from | listen to | host | target from | target to readonly) */}
+          {/* single mode: 4 columns (listen from | listen to | host | target port) */}
+          {/* no range:    3 columns (listen | host | target) */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: rangeMode && form.rangeTarget === 'expand'
+              ? 'minmax(70px,1fr) minmax(70px,1fr) minmax(110px,2fr) minmax(70px,1fr) minmax(70px,1fr)'
+              : rangeMode
+                ? 'minmax(80px,1fr) minmax(80px,1fr) minmax(120px,2fr) minmax(80px,1fr)'
+                : '1fr 2fr 1fr',
+            gap: 12,
+          }}>
+            {/* Listen port start */}
             <div className="field" style={{ margin: 0 }}>
               <label style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rangeMode ? t('range_from') : t('field_listen_port')}</label>
               <input type="number" min="1" max="65535" required value={form.listenPort} onChange={e => set('listenPort', e.target.value)} placeholder="8080" />
             </div>
+            {/* Listen port end */}
             {rangeMode && (
               <div className="field" style={{ margin: 0 }}>
                 <label style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('range_to')}</label>
                 <input type="number" min="1" max="65535" required={rangeMode} value={form.portRangeEnd} onChange={e => set('portRangeEnd', e.target.value)} placeholder="8090" />
               </div>
             )}
+            {/* Target host */}
             <div className="field" style={{ margin: 0 }}>
               <label style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('field_target_host')}</label>
               <input required value={form.targetHost} onChange={e => set('targetHost', e.target.value)} placeholder="10.0.0.5" />
             </div>
+            {/* Target port start */}
             <div className="field" style={{ margin: 0 }}>
-              <label style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('field_target_port')}</label>
+              <label style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {rangeMode && form.rangeTarget === 'expand' ? t('range_from') : t('field_target_port')}
+              </label>
               <input type="number" min="1" max="65535" required value={form.targetPort} onChange={e => set('targetPort', e.target.value)} placeholder="80" />
             </div>
+            {/* Target port end — calculated, read-only, only in expand mode */}
+            {rangeMode && form.rangeTarget === 'expand' && (
+              <div className="field" style={{ margin: 0 }}>
+                <label style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('range_to')}</label>
+                <input
+                  type="number" readOnly tabIndex={-1}
+                  value={isRange && form.targetPort ? Number(form.targetPort) + rangeSize - 1 : ''}
+                  placeholder="—"
+                  style={{ background: 'var(--surface2)', color: 'var(--text-muted)', cursor: 'default' }}
+                />
+              </div>
+            )}
           </div>
 
           {/* Enable toggle */}
