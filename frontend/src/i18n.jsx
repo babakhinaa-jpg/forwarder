@@ -39,6 +39,11 @@ const T = {
     mode_label:'Forwarding mode',mode_socket:'Socket',mode_socket_desc:'App-level proxy (TCP/UDP)',mode_iptables:'iptables',mode_iptables_desc:'Kernel DNAT — best for large ranges',mode_iptables_info:'Rules are applied via iptables DNAT. ip_forward must be enabled on this server.',
     ipfwd_on:'ip_forward: enabled',ipfwd_off:'ip_forward: disabled',ipfwd_checking:'checking…',
     ipfwd_enable_btn:'Enable',ipfwd_pwd_hint:'Enter your admin password to confirm',ipfwd_enabling:'Enabling…',ipfwd_enable_ok:'ip_forward enabled successfully',
+    footer_slogan:'Making life easier for the lazy 😄',footer_copyright:'Port Forwarder',
+    about_title:'Port Forwarder',about_desc:'A self-hosted web UI for managing TCP/UDP port forwarding rules. Supports large port ranges via kernel-level iptables DNAT — perfect for TURN servers and other high-port-count services. No agents, no cloud, runs on your server.',
+    about_feat_label:'Features',about_feat_val:'Rules, ranges, stats, live toggle',
+    about_proto_label:'Protocols',about_mode_label:'Modes',about_range_label:'Port ranges',about_range_val:'Up to 65535 ports per rule',
+    about_i18n_label:'Languages',about_dev_label:'Developer',
   },
   ru: {
     app_name:'Переадресация портов',login_subtitle:'Войдите для управления правилами',login_username:'Пользователь',login_password:'Пароль',login_submit:'Войти',login_submitting:'Вход…',login_hint:'По умолчанию: admin / password',
@@ -66,6 +71,11 @@ const T = {
     mode_label:'Режим форвардинга',mode_socket:'Socket',mode_socket_desc:'Прокси приложения (TCP/UDP)',mode_iptables:'iptables',mode_iptables_desc:'DNAT ядра — для больших диапазонов',mode_iptables_info:'Правила применяются через iptables DNAT. На сервере должен быть включён ip_forward.',
     ipfwd_on:'ip_forward: включён',ipfwd_off:'ip_forward: выключен',ipfwd_checking:'проверяем…',
     ipfwd_enable_btn:'Включить',ipfwd_pwd_hint:'Введите пароль администратора для подтверждения',ipfwd_enabling:'Включаем…',ipfwd_enable_ok:'ip_forward успешно включён',
+    footer_slogan:'Мы облегчаем жизнь ленивым 😄',footer_copyright:'Port Forwarder',
+    about_title:'Port Forwarder',about_desc:'Самохостируемый веб-интерфейс для управления правилами переадресации TCP/UDP портов. Поддерживает большие диапазоны портов через iptables DNAT на уровне ядра — идеально для TURN-серверов и других сервисов с большим числом портов. Никаких агентов, никакого облака — работает на вашем сервере.',
+    about_feat_label:'Возможности',about_feat_val:'Правила, диапазоны, статистика, быстрое управление',
+    about_proto_label:'Протоколы',about_mode_label:'Режимы',about_range_label:'Диапазоны портов',about_range_val:'До 65535 портов на правило',
+    about_i18n_label:'Языки',about_dev_label:'Разработчик',
   },
   zh: {
     app_name:'端口转发器',login_subtitle:'登录以管理转发规则',login_username:'用户名',login_password:'密码',login_submit:'登录',login_submitting:'登录中…',login_hint:'默认：admin / password',
@@ -93,6 +103,9 @@ const T = {
     mode_label:'转发模式',mode_socket:'Socket',mode_socket_desc:'应用层代理（TCP/UDP）',mode_iptables:'iptables',mode_iptables_desc:'内核 DNAT — 适合大范围端口',mode_iptables_info:'规则通过 iptables DNAT 应用。服务器必须启用 ip_forward。',
     ipfwd_on:'ip_forward: 已启用',ipfwd_off:'ip_forward: 未启用',ipfwd_checking:'检查中…',
     ipfwd_enable_btn:'启用',ipfwd_pwd_hint:'请输入管理员密码以确认',ipfwd_enabling:'启用中…',ipfwd_enable_ok:'ip_forward 已成功启用',
+    footer_slogan:'让懒人的生活更轻松 😄',footer_copyright:'Port Forwarder',
+    about_title:'端口转发器',about_desc:'自托管的 TCP/UDP 端口转发规则管理 Web UI。支持通过内核级 iptables DNAT 进行大范围端口转发，适合 TURN 服务器等高端口需求场景。',
+    about_feat_label:'功能',about_feat_val:'规则、范围、统计、实时切换',about_proto_label:'协议',about_mode_label:'模式',about_range_label:'端口范围',about_range_val:'每条规则最多 65535 个端口',about_i18n_label:'语言',about_dev_label:'开发者',
   },
   es: {
     app_name:'Reenvío de puertos',login_subtitle:'Inicia sesión para gestionar las reglas',login_username:'Usuario',login_password:'Contraseña',login_submit:'Iniciar sesión',login_submitting:'Iniciando…',login_hint:'Predeterminado: admin / password',
@@ -120,6 +133,9 @@ const T = {
     mode_label:'Modo de reenvío',mode_socket:'Socket',mode_socket_desc:'Proxy de aplicación (TCP/UDP)',mode_iptables:'iptables',mode_iptables_desc:'DNAT del kernel — ideal para rangos grandes',mode_iptables_info:'Las reglas se aplican mediante iptables DNAT. ip_forward debe estar habilitado en este servidor.',
     ipfwd_on:'ip_forward: habilitado',ipfwd_off:'ip_forward: deshabilitado',ipfwd_checking:'comprobando…',
     ipfwd_enable_btn:'Habilitar',ipfwd_pwd_hint:'Ingresa la contraseña de administrador para confirmar',ipfwd_enabling:'Habilitando…',ipfwd_enable_ok:'ip_forward habilitado correctamente',
+    footer_slogan:'Hacemos la vida más fácil a los perezosos 😄',footer_copyright:'Port Forwarder',
+    about_title:'Reenvío de puertos',about_desc:'Interfaz web autoalojada para gestionar reglas de reenvío de puertos TCP/UDP. Soporta grandes rangos de puertos mediante iptables DNAT a nivel de kernel — ideal para servidores TURN.',
+    about_feat_label:'Funciones',about_feat_val:'Reglas, rangos, estadísticas, toggle en vivo',about_proto_label:'Protocolos',about_mode_label:'Modos',about_range_label:'Rangos de puertos',about_range_val:'Hasta 65535 puertos por regla',about_i18n_label:'Idiomas',about_dev_label:'Desarrollador',
   },
   de: {
     app_name:'Port-Weiterleitung',login_subtitle:'Anmelden zur Verwaltung der Weiterleitungsregeln',login_username:'Benutzername',login_password:'Passwort',login_submit:'Anmelden',login_submitting:'Anmelden…',login_hint:'Standard: admin / password',
@@ -147,6 +163,9 @@ const T = {
     mode_label:'Weiterleitungsmodus',mode_socket:'Socket',mode_socket_desc:'App-Proxy (TCP/UDP)',mode_iptables:'iptables',mode_iptables_desc:'Kernel-DNAT — ideal für große Bereiche',mode_iptables_info:'Regeln werden über iptables DNAT angewendet. ip_forward muss auf diesem Server aktiviert sein.',
     ipfwd_on:'ip_forward: aktiv',ipfwd_off:'ip_forward: inaktiv',ipfwd_checking:'prüfen…',
     ipfwd_enable_btn:'Aktivieren',ipfwd_pwd_hint:'Admin-Passwort zur Bestätigung eingeben',ipfwd_enabling:'Aktivieren…',ipfwd_enable_ok:'ip_forward erfolgreich aktiviert',
+    footer_slogan:'Wir erleichtern das Leben der Faulen 😄',footer_copyright:'Port Forwarder',
+    about_title:'Port-Weiterleitung',about_desc:'Selbst gehostete Web-UI für TCP/UDP-Weiterleitungsregeln. Unterstützt große Portbereiche via iptables DNAT auf Kernel-Ebene — ideal für TURN-Server.',
+    about_feat_label:'Funktionen',about_feat_val:'Regeln, Bereiche, Statistik, Live-Toggle',about_proto_label:'Protokolle',about_mode_label:'Modi',about_range_label:'Portbereiche',about_range_val:'Bis zu 65535 Ports pro Regel',about_i18n_label:'Sprachen',about_dev_label:'Entwickler',
   },
   fr: {
     app_name:'Redirecteur de ports',login_subtitle:'Connectez-vous pour gérer les règles de redirection',login_username:'Identifiant',login_password:'Mot de passe',login_submit:'Se connecter',login_submitting:'Connexion…',login_hint:'Par défaut : admin / password',
@@ -174,6 +193,9 @@ const T = {
     mode_label:'Mode de redirection',mode_socket:'Socket',mode_socket_desc:'Proxy applicatif (TCP/UDP)',mode_iptables:'iptables',mode_iptables_desc:'DNAT noyau — idéal pour les grandes plages',mode_iptables_info:'Les règles sont appliquées via iptables DNAT. ip_forward doit être activé sur ce serveur.',
     ipfwd_on:'ip_forward: activé',ipfwd_off:'ip_forward: désactivé',ipfwd_checking:'vérification…',
     ipfwd_enable_btn:'Activer',ipfwd_pwd_hint:'Entrez le mot de passe admin pour confirmer',ipfwd_enabling:'Activation…',ipfwd_enable_ok:'ip_forward activé avec succès',
+    footer_slogan:'Nous facilitons la vie des paresseux 😄',footer_copyright:'Port Forwarder',
+    about_title:'Redirecteur de ports',about_desc:'Interface web auto-hébergée pour gérer les règles de redirection de ports TCP/UDP. Supporte les grandes plages de ports via iptables DNAT au niveau du noyau — idéal pour les serveurs TURN.',
+    about_feat_label:'Fonctionnalités',about_feat_val:'Règles, plages, statistiques, bascule en direct',about_proto_label:'Protocoles',about_mode_label:'Modes',about_range_label:'Plages de ports',about_range_val:"Jusqu'à 65535 ports par règle",about_i18n_label:'Langues',about_dev_label:'Développeur',
   },
   pt: {
     app_name:'Encaminhador de portas',login_subtitle:'Faça login para gerenciar as regras de encaminhamento',login_username:'Usuário',login_password:'Senha',login_submit:'Entrar',login_submitting:'Entrando…',login_hint:'Padrão: admin / password',
@@ -201,6 +223,9 @@ const T = {
     mode_label:'Modo de encaminhamento',mode_socket:'Socket',mode_socket_desc:'Proxy de aplicação (TCP/UDP)',mode_iptables:'iptables',mode_iptables_desc:'DNAT do kernel — ideal para grandes faixas',mode_iptables_info:'As regras são aplicadas via iptables DNAT. ip_forward deve estar habilitado neste servidor.',
     ipfwd_on:'ip_forward: ativo',ipfwd_off:'ip_forward: inativo',ipfwd_checking:'verificando…',
     ipfwd_enable_btn:'Ativar',ipfwd_pwd_hint:'Digite a senha do administrador para confirmar',ipfwd_enabling:'Ativando…',ipfwd_enable_ok:'ip_forward ativado com sucesso',
+    footer_slogan:'Facilitamos a vida dos preguiçosos 😄',footer_copyright:'Port Forwarder',
+    about_title:'Encaminhador de portas',about_desc:'Interface web auto-hospedada para gerenciar regras de encaminhamento de portas TCP/UDP. Suporta grandes faixas de portas via iptables DNAT no nível do kernel — ideal para servidores TURN.',
+    about_feat_label:'Recursos',about_feat_val:'Regras, faixas, estatísticas, toggle ao vivo',about_proto_label:'Protocolos',about_mode_label:'Modos',about_range_label:'Faixas de portas',about_range_val:'Até 65535 portas por regra',about_i18n_label:'Idiomas',about_dev_label:'Desenvolvedor',
   },
   uk: {
     app_name:'Переадресація портів',login_subtitle:'Увійдіть для управління правилами',login_username:'Користувач',login_password:'Пароль',login_submit:'Увійти',login_submitting:'Вхід…',login_hint:'За замовчуванням: admin / password',
@@ -228,6 +253,9 @@ const T = {
     mode_label:'Режим форвардингу',mode_socket:'Socket',mode_socket_desc:'Проксі застосунку (TCP/UDP)',mode_iptables:'iptables',mode_iptables_desc:'DNAT ядра — для великих діапазонів',mode_iptables_info:'Правила застосовуються через iptables DNAT. На сервері має бути увімкнено ip_forward.',
     ipfwd_on:'ip_forward: увімкнено',ipfwd_off:'ip_forward: вимкнено',ipfwd_checking:'перевіряємо…',
     ipfwd_enable_btn:'Увімкнути',ipfwd_pwd_hint:'Введіть пароль адміністратора для підтвердження',ipfwd_enabling:'Вмикаємо…',ipfwd_enable_ok:'ip_forward успішно увімкнено',
+    footer_slogan:'Ми полегшуємо життя ледачим 😄',footer_copyright:'Port Forwarder',
+    about_title:'Переадресація портів',about_desc:'Самохостований веб-інтерфейс для управління правилами переадресації TCP/UDP портів. Підтримує великі діапазони портів через iptables DNAT на рівні ядра — ідеально для TURN-серверів.',
+    about_feat_label:'Можливості',about_feat_val:'Правила, діапазони, статистика, швидке керування',about_proto_label:'Протоколи',about_mode_label:'Режими',about_range_label:'Діапазони портів',about_range_val:'До 65535 портів на правило',about_i18n_label:'Мови',about_dev_label:'Розробник',
   },
   ja: {
     app_name:'ポートフォワーダー',login_subtitle:'転送ルールを管理するにはサインイン',login_username:'ユーザー名',login_password:'パスワード',login_submit:'サインイン',login_submitting:'サインイン中…',login_hint:'デフォルト: admin / password',
@@ -255,6 +283,9 @@ const T = {
     mode_label:'転送モード',mode_socket:'Socket',mode_socket_desc:'アプリレベルプロキシ (TCP/UDP)',mode_iptables:'iptables',mode_iptables_desc:'カーネル DNAT — 大きな範囲に最適',mode_iptables_info:'ルールは iptables DNAT で適用されます。このサーバーで ip_forward が有効である必要があります。',
     ipfwd_on:'ip_forward: 有効',ipfwd_off:'ip_forward: 無効',ipfwd_checking:'確認中…',
     ipfwd_enable_btn:'有効化',ipfwd_pwd_hint:'確認のため管理者パスワードを入力してください',ipfwd_enabling:'有効化中…',ipfwd_enable_ok:'ip_forward を正常に有効化しました',
+    footer_slogan:'怠け者の生活を楽にします 😄',footer_copyright:'Port Forwarder',
+    about_title:'ポートフォワーダー',about_desc:'TCP/UDPポート転送ルールを管理するセルフホスト型WebUI。カーネルレベルのiptables DNATによる大規模ポート範囲をサポート — TURNサーバーに最適。',
+    about_feat_label:'機能',about_feat_val:'ルール、範囲、統計、ライブ切替',about_proto_label:'プロトコル',about_mode_label:'モード',about_range_label:'ポート範囲',about_range_val:'ルールあたり最大65535ポート',about_i18n_label:'言語',about_dev_label:'開発者',
   },
 };
 

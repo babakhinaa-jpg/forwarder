@@ -5,6 +5,7 @@ import RuleModal from './RuleModal.jsx';
 import PasswordModal from './PasswordModal.jsx';
 import LangPicker from './LangPicker.jsx';
 import UpdateModal from './UpdateModal.jsx';
+import AboutModal from './AboutModal.jsx';
 
 function formatBytes(b) {
   if (!b) return '0 B';
@@ -70,6 +71,7 @@ export default function Dashboard({ username, onLogout }) {
   const [modalError, setModalError] = useState('');
   const [toast, setToast] = useState(null);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('pf_theme') !== 'light');
+  const [showAbout, setShowAbout] = useState(false);
 
   useEffect(() => {
     document.documentElement.dataset.theme = darkMode ? 'dark' : 'light';
@@ -294,6 +296,26 @@ export default function Dashboard({ username, onLogout }) {
         </div>
       </main>
 
+      <footer style={{
+        borderTop: '1px solid var(--border)', padding: '12px 24px',
+        display: 'flex', justifyContent: 'center', alignItems: 'center',
+      }}>
+        <button
+          onClick={() => setShowAbout(true)}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: 'var(--text-muted)', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6,
+            transition: 'color .15s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
+          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+        >
+          <span>{t('footer_slogan')}</span>
+          <span style={{ opacity: .5 }}>·</span>
+          <span>© {new Date().getFullYear()} {t('footer_copyright')}</span>
+        </button>
+      </footer>
+
       {toast && (
         <div style={{
           position: 'fixed', bottom: 24, right: 24,
@@ -312,6 +334,7 @@ export default function Dashboard({ username, onLogout }) {
       {editRule     && <RuleModal rule={editRule} onSave={handleUpdate} onClose={() => setEditRule(null)} loading={saving} error={modalError} />}
       {showPassword && <PasswordModal onClose={() => setShowPassword(false)} />}
       {showUpdate   && <UpdateModal onClose={() => setShowUpdate(false)} />}
+      {showAbout    && <AboutModal onClose={() => setShowAbout(false)} />}
     </div>
   );
 }
