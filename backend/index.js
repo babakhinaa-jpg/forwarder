@@ -80,7 +80,7 @@ function validatePorts(from, to, existingRules, excludeId) {
   from = Number(from); to = to ? Number(to) : from;
   if (from < 1 || from > 65535 || to < 1 || to > 65535) return 'Port out of range (1-65535)';
   if (to < from) return 'Range end must be >= range start';
-  if (to - from >= 5000) return 'Range too large (max 5000 ports)';
+  if (to > 65535) return 'Port out of range (max 65535)';
   for (let p = from; p <= to; p++) {
     const conflict = existingRules.find((r) => {
       if (r.id === excludeId) return false;

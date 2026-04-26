@@ -3,7 +3,7 @@ const dgram = require('dgram');
 const EventEmitter = require('events');
 
 const UDP_SESSION_TTL = 60_000;
-const MAX_RANGE = 5000;
+const MAX_RANGE = 65535;
 
 class Forwarder extends EventEmitter {
   constructor() {

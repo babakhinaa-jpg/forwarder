@@ -245,6 +245,9 @@ RestartSec=5s
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 
+# High file descriptor limit for large port ranges (e.g. 49152-65535 = 16k sockets)
+LimitNOFILE=131072
+
 Environment=PORT=${APP_PORT}
 Environment=NODE_ENV=production
 
