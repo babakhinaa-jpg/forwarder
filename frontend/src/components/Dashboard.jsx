@@ -72,11 +72,23 @@ export default function Dashboard({ username, onLogout }) {
   const [toast, setToast] = useState(null);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('pf_theme') !== 'light');
   const [showAbout, setShowAbout] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(null);
 
   useEffect(() => {
     document.documentElement.dataset.theme = darkMode ? 'dark' : 'light';
     localStorage.setItem('pf_theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
+
+  // Auto-check for updates once on mount (3 s delay to avoid blocking initial load)
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      try {
+        const r = await api.checkUpdate();
+        if (r.available) setUpdateAvailable(r);
+      } catch {}
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const fetchRules = useCallback(async () => {
     try {
@@ -161,12 +173,15 @@ export default function Dashboard({ username, onLogout }) {
               : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
             }
           </button>
-          <button className="btn btn-ghost" style={{ padding: '6px 12px' }} onClick={() => setShowUpdate(true)}>
+          <button className="btn btn-ghost" style={{ padding: '6px 12px', position: 'relative' }} onClick={() => setShowUpdate(true)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
             </svg>
             {t('btn_update')}
+            {updateAvailable && (
+              <span className="update-dot" title={`Update available: ${updateAvailable.local} → ${updateAvailable.remote}`} />
+            )}
           </button>
           <button className="btn btn-ghost" style={{ padding: '6px 12px' }} onClick={() => setShowPassword(true)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -333,7 +348,7 @@ export default function Dashboard({ username, onLogout }) {
       {showAdd      && <RuleModal onSave={handleCreate} onClose={() => setShowAdd(false)} loading={saving} error={modalError} />}
       {editRule     && <RuleModal rule={editRule} onSave={handleUpdate} onClose={() => setEditRule(null)} loading={saving} error={modalError} />}
       {showPassword && <PasswordModal onClose={() => setShowPassword(false)} />}
-      {showUpdate   && <UpdateModal onClose={() => setShowUpdate(false)} />}
+      {showUpdate   && <UpdateModal onClose={() => setShowUpdate(false)} initialCheckResult={updateAvailable} />}
       {showAbout    && <AboutModal onClose={() => setShowAbout(false)} />}
     </div>
   );

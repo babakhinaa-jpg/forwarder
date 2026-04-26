@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { api } from '../api.js';
 import { useI18n } from '../i18n.jsx';
 
-export default function UpdateModal({ onClose }) {
+export default function UpdateModal({ onClose, initialCheckResult }) {
   const { t } = useI18n();
   const [info, setInfo] = useState(null);
-  const [checkResult, setCheckResult] = useState(null);
+  const [checkResult, setCheckResult] = useState(initialCheckResult || null);
   const [phase, setPhase] = useState('idle'); // idle | checking | updating | done | error | restarting
   const [log, setLog] = useState('');
   const logRef = useRef(null);
