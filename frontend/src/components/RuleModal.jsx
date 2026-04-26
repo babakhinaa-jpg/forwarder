@@ -17,11 +17,29 @@ export default function RuleModal({ rule, onSave, onClose, loading, error }) {
   });
   const [rangeMode, setRangeMode] = useState(!!(rule?.portRangeEnd));
   const [ipFwd, setIpFwd] = useState(null); // null=checking, true=on, false=off
+  const [ipFwdForm, setIpFwdForm] = useState(false);
+  const [ipFwdPwd, setIpFwdPwd] = useState('');
+  const [ipFwdBusy, setIpFwdBusy] = useState(false);
+  const [ipFwdErr, setIpFwdErr] = useState('');
+  const [ipFwdOk, setIpFwdOk] = useState(false);
 
   useEffect(() => {
-    if (form.mode !== 'iptables') { setIpFwd(null); return; }
+    if (form.mode !== 'iptables') { setIpFwd(null); setIpFwdForm(false); setIpFwdOk(false); return; }
     api.checkIpForward().then(r => setIpFwd(r.enabled)).catch(() => setIpFwd(false));
   }, [form.mode]);
+
+  async function handleEnableIpFwd(e) {
+    e.preventDefault();
+    setIpFwdBusy(true); setIpFwdErr('');
+    try {
+      await api.enableIpForward(ipFwdPwd);
+      setIpFwd(true); setIpFwdOk(true); setIpFwdForm(false); setIpFwdPwd('');
+    } catch (err) {
+      setIpFwdErr(err.message);
+    } finally {
+      setIpFwdBusy(false);
+    }
+  }
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })); }
 
@@ -98,12 +116,41 @@ export default function RuleModal({ rule, onSave, onClose, loading, error }) {
                       ✓ {t('ipfwd_on')}
                     </span>
                   )}
-                  {ipFwd === false && (
-                    <span style={{ background: 'rgba(239,68,68,.2)', color: '#fca5a5', padding: '2px 8px', borderRadius: 4, fontWeight: 700, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-                      ✗ {t('ipfwd_off')}
-                    </span>
+                  {ipFwd === false && !ipFwdForm && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                      <span style={{ background: 'rgba(239,68,68,.2)', color: '#fca5a5', padding: '2px 8px', borderRadius: 4, fontWeight: 700, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                        ✗ {t('ipfwd_off')}
+                      </span>
+                      <button type="button"
+                        onClick={() => { setIpFwdForm(true); setIpFwdErr(''); }}
+                        style={{ background: 'rgba(59,130,246,.2)', color: '#60a5fa', border: '1px solid rgba(59,130,246,.4)', borderRadius: 4, padding: '2px 8px', fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        {t('ipfwd_enable_btn')}
+                      </button>
+                    </div>
                   )}
                 </div>
+                {ipFwd === false && ipFwdForm && (
+                  <form onSubmit={handleEnableIpFwd} style={{ marginTop: 8, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input
+                      type="password"
+                      autoFocus
+                      value={ipFwdPwd}
+                      onChange={e => setIpFwdPwd(e.target.value)}
+                      placeholder={t('ipfwd_pwd_hint')}
+                      style={{ flex: 1, minWidth: 160, padding: '4px 8px', fontSize: 12, borderRadius: 4, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)' }}
+                    />
+                    <button type="submit" disabled={ipFwdBusy || !ipFwdPwd}
+                      style={{ background: 'rgba(59,130,246,.8)', color: '#fff', border: 'none', borderRadius: 4, padding: '4px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      {ipFwdBusy ? t('ipfwd_enabling') : t('ipfwd_enable_btn')}
+                    </button>
+                    <button type="button" onClick={() => { setIpFwdForm(false); setIpFwdErr(''); setIpFwdPwd(''); }}
+                      style={{ background: 'transparent', color: 'var(--text-muted)', border: 'none', cursor: 'pointer', fontSize: 12 }}>✕</button>
+                    {ipFwdErr && <div style={{ width: '100%', color: '#fca5a5', marginTop: 2 }}>{ipFwdErr}</div>}
+                  </form>
+                )}
+                {ipFwdOk && ipFwd === true && (
+                  <div style={{ marginTop: 4, color: '#4ade80', fontSize: 11 }}>✓ {t('ipfwd_enable_ok')}</div>
+                )}
               </div>
             )}
           </div>

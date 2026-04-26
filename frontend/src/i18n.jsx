@@ -38,6 +38,7 @@ const T = {
     range_target_mode:'Target mapping',range_expand_label:'Expand (1:1)',range_single_label:'Single (many→1)',
     mode_label:'Forwarding mode',mode_socket:'Socket',mode_socket_desc:'App-level proxy (TCP/UDP)',mode_iptables:'iptables',mode_iptables_desc:'Kernel DNAT — best for large ranges',mode_iptables_info:'Rules are applied via iptables DNAT. ip_forward must be enabled on this server.',
     ipfwd_on:'ip_forward: enabled',ipfwd_off:'ip_forward: disabled',ipfwd_checking:'checking…',
+    ipfwd_enable_btn:'Enable',ipfwd_pwd_hint:'Enter your admin password to confirm',ipfwd_enabling:'Enabling…',ipfwd_enable_ok:'ip_forward enabled successfully',
   },
   ru: {
     app_name:'Переадресация портов',login_subtitle:'Войдите для управления правилами',login_username:'Пользователь',login_password:'Пароль',login_submit:'Войти',login_submitting:'Вход…',login_hint:'По умолчанию: admin / password',
@@ -64,6 +65,7 @@ const T = {
     range_target_mode:'Режим цели',range_expand_label:'Диапазон (1:1)',range_single_label:'Один порт (все→1)',
     mode_label:'Режим форвардинга',mode_socket:'Socket',mode_socket_desc:'Прокси приложения (TCP/UDP)',mode_iptables:'iptables',mode_iptables_desc:'DNAT ядра — для больших диапазонов',mode_iptables_info:'Правила применяются через iptables DNAT. На сервере должен быть включён ip_forward.',
     ipfwd_on:'ip_forward: включён',ipfwd_off:'ip_forward: выключен',ipfwd_checking:'проверяем…',
+    ipfwd_enable_btn:'Включить',ipfwd_pwd_hint:'Введите пароль администратора для подтверждения',ipfwd_enabling:'Включаем…',ipfwd_enable_ok:'ip_forward успешно включён',
   },
   zh: {
     app_name:'端口转发器',login_subtitle:'登录以管理转发规则',login_username:'用户名',login_password:'密码',login_submit:'登录',login_submitting:'登录中…',login_hint:'默认：admin / password',
@@ -90,6 +92,7 @@ const T = {
     range_target_mode:'目标映射',range_expand_label:'扩展（1:1）',range_single_label:'单一（多→1）',
     mode_label:'转发模式',mode_socket:'Socket',mode_socket_desc:'应用层代理（TCP/UDP）',mode_iptables:'iptables',mode_iptables_desc:'内核 DNAT — 适合大范围端口',mode_iptables_info:'规则通过 iptables DNAT 应用。服务器必须启用 ip_forward。',
     ipfwd_on:'ip_forward: 已启用',ipfwd_off:'ip_forward: 未启用',ipfwd_checking:'检查中…',
+    ipfwd_enable_btn:'启用',ipfwd_pwd_hint:'请输入管理员密码以确认',ipfwd_enabling:'启用中…',ipfwd_enable_ok:'ip_forward 已成功启用',
   },
   es: {
     app_name:'Reenvío de puertos',login_subtitle:'Inicia sesión para gestionar las reglas',login_username:'Usuario',login_password:'Contraseña',login_submit:'Iniciar sesión',login_submitting:'Iniciando…',login_hint:'Predeterminado: admin / password',
@@ -116,6 +119,7 @@ const T = {
     range_target_mode:'Mapa de destino',range_expand_label:'Expandir (1:1)',range_single_label:'Único (todos→1)',
     mode_label:'Modo de reenvío',mode_socket:'Socket',mode_socket_desc:'Proxy de aplicación (TCP/UDP)',mode_iptables:'iptables',mode_iptables_desc:'DNAT del kernel — ideal para rangos grandes',mode_iptables_info:'Las reglas se aplican mediante iptables DNAT. ip_forward debe estar habilitado en este servidor.',
     ipfwd_on:'ip_forward: habilitado',ipfwd_off:'ip_forward: deshabilitado',ipfwd_checking:'comprobando…',
+    ipfwd_enable_btn:'Habilitar',ipfwd_pwd_hint:'Ingresa la contraseña de administrador para confirmar',ipfwd_enabling:'Habilitando…',ipfwd_enable_ok:'ip_forward habilitado correctamente',
   },
   de: {
     app_name:'Port-Weiterleitung',login_subtitle:'Anmelden zur Verwaltung der Weiterleitungsregeln',login_username:'Benutzername',login_password:'Passwort',login_submit:'Anmelden',login_submitting:'Anmelden…',login_hint:'Standard: admin / password',
@@ -142,6 +146,7 @@ const T = {
     range_target_mode:'Ziel-Zuordnung',range_expand_label:'Erweitern (1:1)',range_single_label:'Einzeln (alle→1)',
     mode_label:'Weiterleitungsmodus',mode_socket:'Socket',mode_socket_desc:'App-Proxy (TCP/UDP)',mode_iptables:'iptables',mode_iptables_desc:'Kernel-DNAT — ideal für große Bereiche',mode_iptables_info:'Regeln werden über iptables DNAT angewendet. ip_forward muss auf diesem Server aktiviert sein.',
     ipfwd_on:'ip_forward: aktiv',ipfwd_off:'ip_forward: inaktiv',ipfwd_checking:'prüfen…',
+    ipfwd_enable_btn:'Aktivieren',ipfwd_pwd_hint:'Admin-Passwort zur Bestätigung eingeben',ipfwd_enabling:'Aktivieren…',ipfwd_enable_ok:'ip_forward erfolgreich aktiviert',
   },
   fr: {
     app_name:'Redirecteur de ports',login_subtitle:'Connectez-vous pour gérer les règles de redirection',login_username:'Identifiant',login_password:'Mot de passe',login_submit:'Se connecter',login_submitting:'Connexion…',login_hint:'Par défaut : admin / password',
@@ -168,6 +173,7 @@ const T = {
     range_target_mode:'Mode cible',range_expand_label:'Étendu (1:1)',range_single_label:'Unique (tous→1)',
     mode_label:'Mode de redirection',mode_socket:'Socket',mode_socket_desc:'Proxy applicatif (TCP/UDP)',mode_iptables:'iptables',mode_iptables_desc:'DNAT noyau — idéal pour les grandes plages',mode_iptables_info:'Les règles sont appliquées via iptables DNAT. ip_forward doit être activé sur ce serveur.',
     ipfwd_on:'ip_forward: activé',ipfwd_off:'ip_forward: désactivé',ipfwd_checking:'vérification…',
+    ipfwd_enable_btn:'Activer',ipfwd_pwd_hint:'Entrez le mot de passe admin pour confirmer',ipfwd_enabling:'Activation…',ipfwd_enable_ok:'ip_forward activé avec succès',
   },
   pt: {
     app_name:'Encaminhador de portas',login_subtitle:'Faça login para gerenciar as regras de encaminhamento',login_username:'Usuário',login_password:'Senha',login_submit:'Entrar',login_submitting:'Entrando…',login_hint:'Padrão: admin / password',
@@ -194,6 +200,7 @@ const T = {
     range_target_mode:'Mapeamento alvo',range_expand_label:'Expandir (1:1)',range_single_label:'Único (todos→1)',
     mode_label:'Modo de encaminhamento',mode_socket:'Socket',mode_socket_desc:'Proxy de aplicação (TCP/UDP)',mode_iptables:'iptables',mode_iptables_desc:'DNAT do kernel — ideal para grandes faixas',mode_iptables_info:'As regras são aplicadas via iptables DNAT. ip_forward deve estar habilitado neste servidor.',
     ipfwd_on:'ip_forward: ativo',ipfwd_off:'ip_forward: inativo',ipfwd_checking:'verificando…',
+    ipfwd_enable_btn:'Ativar',ipfwd_pwd_hint:'Digite a senha do administrador para confirmar',ipfwd_enabling:'Ativando…',ipfwd_enable_ok:'ip_forward ativado com sucesso',
   },
   uk: {
     app_name:'Переадресація портів',login_subtitle:'Увійдіть для управління правилами',login_username:'Користувач',login_password:'Пароль',login_submit:'Увійти',login_submitting:'Вхід…',login_hint:'За замовчуванням: admin / password',
@@ -220,6 +227,7 @@ const T = {
     range_target_mode:'Режим цілі',range_expand_label:'Діапазон (1:1)',range_single_label:'Один порт (всі→1)',
     mode_label:'Режим форвардингу',mode_socket:'Socket',mode_socket_desc:'Проксі застосунку (TCP/UDP)',mode_iptables:'iptables',mode_iptables_desc:'DNAT ядра — для великих діапазонів',mode_iptables_info:'Правила застосовуються через iptables DNAT. На сервері має бути увімкнено ip_forward.',
     ipfwd_on:'ip_forward: увімкнено',ipfwd_off:'ip_forward: вимкнено',ipfwd_checking:'перевіряємо…',
+    ipfwd_enable_btn:'Увімкнути',ipfwd_pwd_hint:'Введіть пароль адміністратора для підтвердження',ipfwd_enabling:'Вмикаємо…',ipfwd_enable_ok:'ip_forward успішно увімкнено',
   },
   ja: {
     app_name:'ポートフォワーダー',login_subtitle:'転送ルールを管理するにはサインイン',login_username:'ユーザー名',login_password:'パスワード',login_submit:'サインイン',login_submitting:'サインイン中…',login_hint:'デフォルト: admin / password',
@@ -246,6 +254,7 @@ const T = {
     range_target_mode:'ターゲットマッピング',range_expand_label:'拡張 (1:1)',range_single_label:'単一 (多対1)',
     mode_label:'転送モード',mode_socket:'Socket',mode_socket_desc:'アプリレベルプロキシ (TCP/UDP)',mode_iptables:'iptables',mode_iptables_desc:'カーネル DNAT — 大きな範囲に最適',mode_iptables_info:'ルールは iptables DNAT で適用されます。このサーバーで ip_forward が有効である必要があります。',
     ipfwd_on:'ip_forward: 有効',ipfwd_off:'ip_forward: 無効',ipfwd_checking:'確認中…',
+    ipfwd_enable_btn:'有効化',ipfwd_pwd_hint:'確認のため管理者パスワードを入力してください',ipfwd_enabling:'有効化中…',ipfwd_enable_ok:'ip_forward を正常に有効化しました',
   },
 };
 

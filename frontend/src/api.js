@@ -62,6 +62,13 @@ export const api = {
   checkIpForward: () =>
     fetch(`${BASE}/system/ipforward`, { headers: authHeaders() }).then(handleResponse),
 
+  enableIpForward: (password) =>
+    fetch(`${BASE}/system/enable-ipforward`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ password }),
+    }).then(handleResponse),
+
   systemInfo: () =>
     fetch(`${BASE}/system/info`, { headers: authHeaders() }).then(handleResponse),
 

@@ -219,16 +219,27 @@ UPDSCRIPT
 chmod +x "$INSTALL_DIR/update.sh"
 ok "Update script created at ${INSTALL_DIR}/update.sh"
 
-# ── 6c. Sudoers rules: restart + update ──────────────────────────────────────
+# ── 6c. Create enable-ipforward.sh helper ───────────────────────────────────
+cat > "$INSTALL_DIR/enable-ipforward.sh" <<'IPFWDSCRIPT'
+#!/usr/bin/env bash
+set -e
+echo "net.ipv4.ip_forward = 1" > /etc/sysctl.d/99-port-forwarder.conf
+sysctl -w net.ipv4.ip_forward=1
+IPFWDSCRIPT
+chmod +x "$INSTALL_DIR/enable-ipforward.sh"
+ok "enable-ipforward.sh created"
+
+# ── 6d. Sudoers rules: restart + update + iptables + ipforward ───────────────
 SUDOERS_FILE="/etc/sudoers.d/port-forwarder"
 IPTABLES_PATH="$(command -v iptables 2>/dev/null || echo /sbin/iptables)"
 {
   echo "${SERVICE_USER} ALL=(ALL) NOPASSWD: /bin/systemctl restart ${SERVICE_NAME}"
   echo "${SERVICE_USER} ALL=(ALL) NOPASSWD: ${INSTALL_DIR}/update.sh"
+  echo "${SERVICE_USER} ALL=(ALL) NOPASSWD: ${INSTALL_DIR}/enable-ipforward.sh"
   echo "${SERVICE_USER} ALL=(ALL) NOPASSWD: ${IPTABLES_PATH}"
 } > "$SUDOERS_FILE"
 chmod 440 "$SUDOERS_FILE"
-ok "Sudoers rules created (restart + update + iptables)"
+ok "Sudoers rules created (restart + update + iptables + enable-ipforward)"
 
 # ── 6d. Enable ip_forward ─────────────────────────────────────────────────────
 info "Enabling ip_forward..."

@@ -238,6 +238,32 @@ app.get('/api/system/ipforward', requireAuth, (req, res) => {
   }
 });
 
+// ── System / enable ip_forward ───────────────────────────────────────────────
+app.post('/api/system/enable-ipforward', requireAuth, async (req, res) => {
+  const { password } = req.body || {};
+  if (!password) return res.status(400).json({ error: 'Password required' });
+
+  const creds = config.getCredentials();
+  const ok = await bcrypt.compare(password, creds.passwordHash);
+  if (!ok) return res.status(401).json({ error: 'Wrong password' });
+
+  const script = '/opt/port-forwarder/enable-ipforward.sh';
+  if (!fs.existsSync(script)) {
+    return res.status(400).json({ error: 'Not installed via install.sh — run sudo ./install.sh first' });
+  }
+
+  try {
+    const { execFileSync } = require('child_process');
+    execFileSync('sudo', [script], {
+      env: { PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', HOME: '/tmp' },
+      timeout: 5000,
+    });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── System / Update ───────────────────────────────────────────────────────────
 const { spawn } = require('child_process');
 const https = require('https');
