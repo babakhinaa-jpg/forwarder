@@ -183,7 +183,15 @@ export default function UpdateModal({ onClose, initialCheckResult }) {
             </button>
           )}
           {phase === 'updating' && (
-            <button className="btn btn-primary" disabled>{t('upd_running')}</button>
+            <>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite', marginRight: 4, verticalAlign: 'middle' }}>
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                </svg>
+                Обновление идёт в фоне…
+              </span>
+              <button className="btn btn-primary" disabled>{t('upd_running')}</button>
+            </>
           )}
           {phase === 'done' && info?.installed && (
             <button className="btn btn-primary" onClick={handleRestart}>

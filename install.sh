@@ -194,17 +194,21 @@ trap cleanup EXIT
 
 export npm_config_cache=/tmp/.npm
 export HOME=/tmp
+mkdir -p /tmp/.npm
 
 echo "=== Downloading latest code from GitHub ==="
-curl -fsSL "https://github.com/${REPO}/archive/refs/heads/${BRANCH}.tar.gz" -o "$TMP_ARCHIVE"
+curl -fsSL --max-time 120 --retry 2 --retry-delay 3 \
+  "https://github.com/${REPO}/archive/refs/heads/${BRANCH}.tar.gz" -o "$TMP_ARCHIVE"
+echo "  downloaded $(du -sh "$TMP_ARCHIVE" | cut -f1)"
 
 echo "=== Extracting ==="
 mkdir -p "$TMP_DIR"
 tar xzf "$TMP_ARCHIVE" -C "$TMP_DIR" --strip-components=1
+echo "  extracted ok"
 
 echo "=== Installing backend dependencies ==="
 cd "$TMP_DIR/backend"
-npm ci --production --silent
+npm ci --production --no-audit --no-fund 2>&1
 
 echo "=== Backing up rules and credentials ==="
 TMPDATA=/tmp/pf-config-$$.json
@@ -226,7 +230,7 @@ rm -f "$TMPDATA"
 
 echo "=== Updating build info ==="
 COMMIT_INFO=/tmp/pf-ghapi-$$.json
-curl -fsSL "https://api.github.com/repos/${REPO}/commits/${BRANCH}" \
+curl -fsSL --max-time 20 "https://api.github.com/repos/${REPO}/commits/${BRANCH}" \
   -H "Accept: application/vnd.github.v3+json" \
   -H "User-Agent: port-forwarder/1.0" > "$COMMIT_INFO" 2>/dev/null || echo '{}' > "$COMMIT_INFO"
 COMMIT=$(node -e "try{var d=JSON.parse(require('fs').readFileSync('${COMMIT_INFO}','utf8'));process.stdout.write(d.sha?d.sha.slice(0,7):'')}catch(e){}" 2>/dev/null || echo "")

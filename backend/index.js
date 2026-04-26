@@ -381,12 +381,26 @@ app.post('/api/system/update', requireAuth, (req, res) => {
     broadcast({ type: 'log', text });
   };
 
+  // SSE keepalive: send a comment every 20 s so browsers don't drop the connection
+  const keepAlive = setInterval(() => {
+    if (activeUpdate) for (const c of activeUpdate.clients) try { c.write(': ping\n\n'); } catch {}
+  }, 20000);
+
+  // Hard timeout: kill the process after 8 minutes
+  const hardTimeout = setTimeout(() => {
+    if (activeUpdate) {
+      appendLog('\n[timeout] Update exceeded 8 minutes — killed. Check network and retry.\n');
+      proc.kill('SIGTERM');
+    }
+  }, 8 * 60 * 1000);
+
   const proc = spawn(updateScript, [], { env: spawnEnv });
 
   proc.stdout.on('data', (c) => appendLog(c.toString()));
   proc.stderr.on('data', (c) => appendLog(c.toString()));
 
   proc.on('error', (e) => {
+    clearInterval(keepAlive); clearTimeout(hardTimeout);
     appendLog(`spawn error: ${e.message}\n`);
     broadcast({ type: 'done', code: 1, success: false });
     if (activeUpdate) { for (const c of activeUpdate.clients) try { c.end(); } catch {} }
@@ -394,6 +408,7 @@ app.post('/api/system/update', requireAuth, (req, res) => {
   });
 
   proc.on('close', (code, signal) => {
+    clearInterval(keepAlive); clearTimeout(hardTimeout);
     if (activeUpdate && !activeUpdate.log.trim()) {
       const hint = signal === 'SIGKILL'
         ? `Killed by SIGKILL (OOM / TasksMax). Run: sudo ./install.sh\n`
