@@ -133,7 +133,7 @@ class Forwarder extends EventEmitter {
   // ── iptables helpers ───────────────────────────────────────────────────────
 
   _ipt(args) {
-    return execFileSync('sudo', ['iptables', ...args], {
+    return execFileSync('iptables', args, {
       env: { PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', HOME: '/tmp' },
       timeout: 10000,
     });

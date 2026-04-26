@@ -218,7 +218,7 @@ app.get('/api/stats', requireAuth, (req, res) => {
 app.get('/api/system/iptables-check', requireAuth, (req, res) => {
   try {
     const { execFileSync: execSync } = require('child_process');
-    execSync('sudo', ['iptables', '-L', '-n'], {
+    execSync('iptables', ['-L', '-n'], {
       env: { PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', HOME: '/tmp' },
       timeout: 10000,
     });
@@ -247,17 +247,13 @@ app.post('/api/system/enable-ipforward', requireAuth, async (req, res) => {
   const ok = await bcrypt.compare(password, creds.passwordHash);
   if (!ok) return res.status(401).json({ error: 'Wrong password' });
 
-  const script = '/opt/port-forwarder/enable-ipforward.sh';
-  if (!fs.existsSync(script)) {
-    return res.status(400).json({ error: 'Not installed via install.sh — run sudo ./install.sh first' });
-  }
-
   try {
-    const { execFileSync } = require('child_process');
-    execFileSync('sudo', [script], {
-      env: { PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', HOME: '/tmp' },
-      timeout: 5000,
-    });
+    // CAP_NET_ADMIN allows writing directly to /proc/sys/net/ without sudo
+    fs.writeFileSync('/proc/sys/net/ipv4/ip_forward', '1\n');
+    // Also persist via sysctl.d (best-effort — works if service has write access or on next install)
+    try {
+      fs.writeFileSync('/etc/sysctl.d/99-port-forwarder.conf', 'net.ipv4.ip_forward = 1\n');
+    } catch {}
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: e.message });

@@ -264,9 +264,9 @@ ExecStart=$(command -v node) ${INSTALL_DIR}/backend/index.js
 Restart=on-failure
 RestartSec=5s
 
-# Allow binding to ports < 1024 (needed if listen port < 1024)
-AmbientCapabilities=CAP_NET_BIND_SERVICE
-CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+# Allow binding to ports < 1024 and direct iptables/sysctl access (no sudo needed)
+AmbientCapabilities=CAP_NET_BIND_SERVICE CAP_NET_ADMIN CAP_NET_RAW
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_NET_ADMIN CAP_NET_RAW
 
 # High file descriptor limit for large port ranges (e.g. 49152-65535 = 16k sockets)
 LimitNOFILE=131072
