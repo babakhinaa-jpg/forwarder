@@ -204,6 +204,10 @@ mkdir -p "$DEST/backend/data"
 rm -f "$TMPDATA"
 chown -R port-forwarder:port-forwarder "$DEST/backend/data"
 
+echo "=== Enabling ip_forward ==="
+echo "net.ipv4.ip_forward = 1" > /etc/sysctl.d/99-port-forwarder.conf
+sysctl -p /etc/sysctl.d/99-port-forwarder.conf 2>&1 || true
+
 echo "=== Updating build info ==="
 COMMIT=$(git -C "$SRC_DIR" rev-parse --short HEAD 2>/dev/null || echo "")
 BRANCH=$(git -C "$SRC_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
