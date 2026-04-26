@@ -366,11 +366,16 @@ app.post('/api/system/update', requireAuth, (req, res) => {
     send({ type: 'done', code: 1, success: false });
     res.end();
   });
-  proc.on('close', (code) => {
-    if (code !== 0 && !hasOutput) {
-      send({ type: 'log', text: `[no output] exit code ${code}\nRun on server: journalctl -u port-forwarder -n 20\nThen re-run: sudo ./install.sh\n` });
+  proc.on('close', (code, signal) => {
+    if (!hasOutput) {
+      const hint = signal === 'SIGKILL'
+        ? `Killed by SIGKILL (OOM or TasksMax). Run: sudo ./install.sh to apply TasksMax=infinity fix.\n`
+        : signal
+          ? `Killed by signal ${signal}. Run: sudo ./install.sh to re-deploy.\n`
+          : `No output, exit code ${code}. Run: sudo ./install.sh to re-deploy.\n`;
+      send({ type: 'log', text: hint });
     }
-    send({ type: 'done', code, success: code === 0 });
+    send({ type: 'done', code: code ?? 1, success: code === 0 });
     res.end();
   });
   req.on('close', () => { if (!proc.killed) proc.kill(); });

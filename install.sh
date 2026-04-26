@@ -202,11 +202,6 @@ echo "=== Extracting ==="
 mkdir -p "$TMP_DIR"
 tar xzf "$TMP_ARCHIVE" -C "$TMP_DIR" --strip-components=1
 
-echo "=== Building frontend ==="
-cd "$TMP_DIR/frontend"
-npm ci --silent
-npm run build --silent
-
 echo "=== Installing backend dependencies ==="
 cd "$TMP_DIR/backend"
 npm ci --production --silent
@@ -222,6 +217,7 @@ cp -a "$TMP_DIR/backend/." "$DEST/backend/"
 
 rm -rf "$DEST/frontend/dist"
 cp -a "$TMP_DIR/frontend/dist" "$DEST/frontend/dist"
+echo "  (pre-built dist from repo — no npm build needed)"
 
 echo "=== Restoring rules and credentials ==="
 mkdir -p "$DEST/backend/data"
@@ -295,6 +291,8 @@ AmbientCapabilities=CAP_NET_BIND_SERVICE CAP_NET_ADMIN CAP_NET_RAW
 
 # High file descriptor limit for large port ranges (e.g. 49152-65535 = 16k sockets)
 LimitNOFILE=131072
+# Allow update.sh to spawn many subprocesses (npm ci forks a lot)
+TasksMax=infinity
 
 Environment=PORT=${APP_PORT}
 Environment=NODE_ENV=production
