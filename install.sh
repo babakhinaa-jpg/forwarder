@@ -159,7 +159,8 @@ if [[ -n "$CONFIG_BACKUP" ]]; then
   ok "Rules and credentials restored"
 fi
 
-chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/backend/data"
+# Give service user full ownership of install dir so update.sh runs without root
+chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
 
 # Save source path so the web UI update button knows where to git pull from
 echo "$SRC_DIR" > "$INSTALL_DIR/.source_path"
@@ -177,42 +178,65 @@ ok "Files installed to ${INSTALL_DIR}"
 info "Creating update script..."
 cat > "$INSTALL_DIR/update.sh" <<'UPDSCRIPT'
 #!/usr/bin/env bash
-# Called by the web UI "Update now" button (runs as root via update mechanism)
+# Called by the web UI "Update now" button
+# Downloads latest code from GitHub — no git, no sudo required
+# Runs as the port-forwarder service user (owns /opt/port-forwarder entirely)
 set -euo pipefail
-DEST=/opt/port-forwarder
-SRC_DIR="$(cat "$DEST/.source_path")"
 
-echo "=== Pulling latest code from $SRC_DIR ==="
-git -C "$SRC_DIR" pull --ff-only
+DEST=/opt/port-forwarder
+REPO=babakhinaa-jpg/forwarder
+BRANCH=main
+TMP_ARCHIVE=/tmp/pf-update-$$.tar.gz
+TMP_DIR=/tmp/pf-update-$$
+
+cleanup() { rm -rf "$TMP_ARCHIVE" "$TMP_DIR" "/tmp/pf-config-$$.json" "/tmp/pf-ghapi-$$.json"; }
+trap cleanup EXIT
+
+export npm_config_cache=/tmp/.npm
+export HOME=/tmp
+
+echo "=== Downloading latest code from GitHub ==="
+curl -fsSL "https://github.com/${REPO}/archive/refs/heads/${BRANCH}.tar.gz" -o "$TMP_ARCHIVE"
+
+echo "=== Extracting ==="
+mkdir -p "$TMP_DIR"
+tar xzf "$TMP_ARCHIVE" -C "$TMP_DIR" --strip-components=1
 
 echo "=== Building frontend ==="
-cd "$SRC_DIR/frontend"
+cd "$TMP_DIR/frontend"
 npm ci --silent
 npm run build --silent
 
+echo "=== Installing backend dependencies ==="
+cd "$TMP_DIR/backend"
+npm ci --production --silent
+
 echo "=== Backing up rules and credentials ==="
-TMPDATA="$(mktemp)"
-[[ -f "$DEST/backend/data/config.json" ]] && cp "$DEST/backend/data/config.json" "$TMPDATA"
+TMPDATA=/tmp/pf-config-$$.json
+[[ -f "$DEST/backend/data/config.json" ]] && cp "$DEST/backend/data/config.json" "$TMPDATA" || true
 
 echo "=== Installing new files ==="
-cp -a "$SRC_DIR/frontend/dist/." "$DEST/frontend/dist/"
-cp -a "$SRC_DIR/backend/." "$DEST/backend/"
+rm -rf "$DEST/backend"
+mkdir -p "$DEST/backend"
+cp -a "$TMP_DIR/backend/." "$DEST/backend/"
+
+rm -rf "$DEST/frontend/dist"
+cp -a "$TMP_DIR/frontend/dist" "$DEST/frontend/dist"
 
 echo "=== Restoring rules and credentials ==="
 mkdir -p "$DEST/backend/data"
-[[ -s "$TMPDATA" ]] && cp "$TMPDATA" "$DEST/backend/data/config.json"
+[[ -f "$TMPDATA" ]] && cp "$TMPDATA" "$DEST/backend/data/config.json" || true
 rm -f "$TMPDATA"
-chown -R port-forwarder:port-forwarder "$DEST/backend/data"
-
-echo "=== Enabling ip_forward ==="
-echo "net.ipv4.ip_forward = 1" > /etc/sysctl.d/99-port-forwarder.conf
-sysctl -p /etc/sysctl.d/99-port-forwarder.conf 2>&1 || true
 
 echo "=== Updating build info ==="
-COMMIT=$(git -C "$SRC_DIR" rev-parse --short HEAD 2>/dev/null || echo "")
-BRANCH=$(git -C "$SRC_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
-BUILD_DATE=$(git -C "$SRC_DIR" log -1 --format="%cd" --date=format:"%Y-%m-%d %H:%M" 2>/dev/null || date "+%Y-%m-%d %H:%M")
-printf '{"commit":"%s","branch":"%s","date":"%s"}\n' "$COMMIT" "$BRANCH" "$BUILD_DATE" > "$DEST/.build-info"
+COMMIT_INFO=/tmp/pf-ghapi-$$.json
+curl -fsSL "https://api.github.com/repos/${REPO}/commits/${BRANCH}" \
+  -H "Accept: application/vnd.github.v3+json" \
+  -H "User-Agent: port-forwarder/1.0" > "$COMMIT_INFO" 2>/dev/null || echo '{}' > "$COMMIT_INFO"
+COMMIT=$(node -e "try{var d=JSON.parse(require('fs').readFileSync('${COMMIT_INFO}','utf8'));process.stdout.write(d.sha?d.sha.slice(0,7):'')}catch(e){}" 2>/dev/null || echo "")
+DATE=$(node -e "try{var d=JSON.parse(require('fs').readFileSync('${COMMIT_INFO}','utf8'));var dt=(d.commit&&d.commit.author&&d.commit.author.date)||'';process.stdout.write(dt.slice(0,16).replace('T',' '))}catch(e){}" 2>/dev/null || date "+%Y-%m-%d %H:%M")
+rm -f "$COMMIT_INFO"
+printf '{"commit":"%s","branch":"%s","date":"%s"}\n' "$COMMIT" "$BRANCH" "$DATE" > "$DEST/.build-info"
 
 echo "=== Done — restart the service to apply ==="
 UPDSCRIPT
