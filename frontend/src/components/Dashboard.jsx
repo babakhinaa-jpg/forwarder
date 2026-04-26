@@ -228,7 +228,14 @@ export default function Dashboard({ username, onLogout }) {
                   <tr key={rule.id}>
                     <td><StatusBadge rule={rule} t={t} /></td>
                     <td style={{ fontWeight: 600 }}>{rule.name}</td>
-                    <td><ProtoTag proto={rule.protocol || 'TCP'} /></td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                        {rule.mode === 'iptables' && (
+                          <span style={{ background: 'rgba(245,158,11,.15)', color: '#fbbf24', padding: '2px 6px', borderRadius: 4, fontSize: 10, fontWeight: 700, fontFamily: 'monospace' }}>iptables</span>
+                        )}
+                        <ProtoTag proto={rule.protocol || 'TCP'} />
+                      </div>
+                    </td>
                     <td>
                       <div className="route">
                         <span style={{ color: 'var(--text-muted)' }}>:</span>

@@ -217,12 +217,20 @@ ok "Update script created at ${INSTALL_DIR}/update.sh"
 
 # ── 6c. Sudoers rules: restart + update ──────────────────────────────────────
 SUDOERS_FILE="/etc/sudoers.d/port-forwarder"
+IPTABLES_PATH="$(command -v iptables 2>/dev/null || echo /sbin/iptables)"
 {
   echo "${SERVICE_USER} ALL=(ALL) NOPASSWD: /bin/systemctl restart ${SERVICE_NAME}"
   echo "${SERVICE_USER} ALL=(ALL) NOPASSWD: ${INSTALL_DIR}/update.sh"
+  echo "${SERVICE_USER} ALL=(ALL) NOPASSWD: ${IPTABLES_PATH}"
 } > "$SUDOERS_FILE"
 chmod 440 "$SUDOERS_FILE"
-ok "Sudoers rules created (restart + update)"
+ok "Sudoers rules created (restart + update + iptables)"
+
+# ── 6d. Enable ip_forward ─────────────────────────────────────────────────────
+info "Enabling ip_forward..."
+echo "net.ipv4.ip_forward = 1" > /etc/sysctl.d/99-port-forwarder.conf
+sysctl -p /etc/sysctl.d/99-port-forwarder.conf 2>&1 | sed 's/^/  /' || warn "sysctl -p failed — ip_forward may not be active until reboot"
+ok "ip_forward enabled"
 
 # ── 7. Create systemd service ─────────────────────────────────────────────────
 info "Creating systemd service..."

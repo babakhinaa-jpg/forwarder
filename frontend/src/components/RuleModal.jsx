@@ -12,6 +12,7 @@ export default function RuleModal({ rule, onSave, onClose, loading, error }) {
     protocol: rule?.protocol || 'TCP',
     enabled: rule?.enabled !== false,
     rangeTarget: rule?.rangeTarget || 'expand',
+    mode: rule?.mode || 'socket',
   });
   const [rangeMode, setRangeMode] = useState(!!(rule?.portRangeEnd));
 
@@ -25,6 +26,7 @@ export default function RuleModal({ rule, onSave, onClose, loading, error }) {
       targetPort: Number(form.targetPort),
       portRangeEnd: rangeMode && form.portRangeEnd ? Number(form.portRangeEnd) : undefined,
       rangeTarget: rangeMode ? form.rangeTarget : undefined,
+      mode: form.mode,
     };
     onSave(payload);
   }
@@ -32,6 +34,11 @@ export default function RuleModal({ rule, onSave, onClose, loading, error }) {
   const isEdit = !!rule;
   const isRange = rangeMode && form.portRangeEnd && Number(form.portRangeEnd) > Number(form.listenPort);
   const rangeSize = isRange ? Number(form.portRangeEnd) - Number(form.listenPort) + 1 : null;
+
+  const MODES = [
+    { value: 'socket',   label: t('mode_socket'),   desc: t('mode_socket_desc') },
+    { value: 'iptables', label: t('mode_iptables'),  desc: t('mode_iptables_desc') },
+  ];
 
   const PROTOCOLS = [
     { value: 'TCP',  label: 'TCP',     desc: t('proto_tcp_desc') },
@@ -50,6 +57,33 @@ export default function RuleModal({ rule, onSave, onClose, loading, error }) {
           <div className="field">
             <label>{t('field_name')} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>{t('field_optional')}</span></label>
             <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="My Server" />
+          </div>
+
+          {/* Forwarding Mode */}
+          <div className="field">
+            <label>{t('mode_label')}</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {MODES.map(m => (
+                <label key={m.value} style={{
+                  flex: 1, cursor: 'pointer', padding: '10px 12px',
+                  borderRadius: 'var(--radius)',
+                  border: `1.5px solid ${form.mode === m.value ? 'var(--primary)' : 'var(--border)'}`,
+                  background: form.mode === m.value ? 'rgba(59,130,246,.12)' : 'var(--bg)',
+                  transition: 'all .15s',
+                }}>
+                  <input type="radio" name="mode" value={m.value}
+                    checked={form.mode === m.value} onChange={() => set('mode', m.value)}
+                    style={{ display: 'none' }} />
+                  <div style={{ fontWeight: 700, fontSize: 13, color: form.mode === m.value ? 'var(--primary)' : 'var(--text)' }}>{m.label}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{m.desc}</div>
+                </label>
+              ))}
+            </div>
+            {form.mode === 'iptables' && (
+              <div style={{ marginTop: 8, padding: '8px 12px', background: 'rgba(245,158,11,.1)', border: '1px solid rgba(245,158,11,.3)', borderRadius: 'var(--radius)', fontSize: 12, color: '#fbbf24' }}>
+                {t('mode_iptables_info')}
+              </div>
+            )}
           </div>
 
           {/* Protocol */}

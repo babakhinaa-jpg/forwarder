@@ -93,12 +93,13 @@ function validatePorts(from, to, existingRules, excludeId) {
 }
 
 app.post('/api/rules', requireAuth, (req, res) => {
-  const { name, listenPort, portRangeEnd, targetHost, targetPort, enabled, protocol, rangeTarget } = req.body || {};
+  const { name, listenPort, portRangeEnd, targetHost, targetPort, enabled, protocol, rangeTarget, mode } = req.body || {};
   if (!listenPort || !targetHost || !targetPort) {
     return res.status(400).json({ error: 'listenPort, targetHost, targetPort are required' });
   }
   const proto = ['TCP', 'UDP', 'BOTH'].includes((protocol || '').toUpperCase())
     ? protocol.toUpperCase() : 'TCP';
+  const fwdMode = ['socket', 'iptables'].includes(mode) ? mode : 'socket';
 
   const rules = config.getRules();
   const portErr = validatePorts(listenPort, portRangeEnd, rules, null);
@@ -119,6 +120,7 @@ app.post('/api/rules', requireAuth, (req, res) => {
     targetHost,
     targetPort: Number(targetPort),
     protocol: proto,
+    mode: fwdMode,
     enabled: enabled !== false,
     createdAt: new Date().toISOString(),
   };
@@ -134,7 +136,7 @@ app.put('/api/rules/:id', requireAuth, (req, res) => {
   const idx = rules.findIndex((r) => r.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Rule not found' });
 
-  const { name, listenPort, portRangeEnd, targetHost, targetPort, enabled, protocol, rangeTarget } = req.body;
+  const { name, listenPort, portRangeEnd, targetHost, targetPort, enabled, protocol, rangeTarget, mode } = req.body;
   const updated = { ...rules[idx] };
 
   if (name !== undefined) updated.name = name;
@@ -155,6 +157,9 @@ app.put('/api/rules/:id', requireAuth, (req, res) => {
   }
   if (rangeTarget !== undefined && updated.portRangeEnd) {
     updated.rangeTarget = rangeTarget === 'single' ? 'single' : 'expand';
+  }
+  if (mode !== undefined && ['socket', 'iptables'].includes(mode)) {
+    updated.mode = mode;
   }
 
   // Restart forwarder if anything changed
@@ -207,6 +212,20 @@ app.get('/api/stats', requireAuth, (req, res) => {
     activeRules: Object.keys(stats).length,
     stats,
   });
+});
+
+// ── System / iptables check ───────────────────────────────────────────────────
+app.get('/api/system/iptables-check', requireAuth, (req, res) => {
+  try {
+    const { execFileSync: execSync } = require('child_process');
+    execSync('sudo', ['iptables', '-L', '-n'], {
+      env: { PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', HOME: '/tmp' },
+      timeout: 10000,
+    });
+    res.json({ available: true });
+  } catch (e) {
+    res.json({ available: false, error: e.message });
+  }
 });
 
 // ── System / Update ───────────────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 const net = require('net');
 const dgram = require('dgram');
 const EventEmitter = require('events');
+const { execFileSync } = require('child_process');
 
 const UDP_SESSION_TTL = 60_000;
 const MAX_RANGE = 65535;
@@ -17,6 +18,20 @@ class Forwarder extends EventEmitter {
   start(rule) {
     if (this.running.has(rule.id)) return { ok: true, already: true };
     const proto = (rule.protocol || 'TCP').toUpperCase();
+
+    if (rule.mode === 'iptables') {
+      const dnatArgsList = this._buildDNATArgsList(rule);
+      this._startIPTables(rule);
+      this.running.set(rule.id, {
+        isIPTables: true,
+        protocol: proto,
+        dnatArgsList,
+        targetHost: rule.targetHost,
+        stats: { startedAt: Date.now() },
+      });
+      return { ok: true };
+    }
+
     const isRange = rule.portRangeEnd && Number(rule.portRangeEnd) > Number(rule.listenPort);
 
     if (isRange) {
@@ -48,7 +63,9 @@ class Forwarder extends EventEmitter {
     const entry = this.running.get(ruleId);
     if (!entry) return { ok: true, already: true };
 
-    if (entry.isRange) {
+    if (entry.isIPTables) {
+      this._stopIPTables(entry);
+    } else if (entry.isRange) {
       for (const e of entry.ports.values()) {
         if (e.tcp) this._stopTCP(e.tcp);
         if (e.udp) this._stopUDP(e.udp);
@@ -68,6 +85,10 @@ class Forwarder extends EventEmitter {
   getStats(ruleId) {
     const entry = this.running.get(ruleId);
     if (!entry) return null;
+
+    if (entry.isIPTables) {
+      return { mode: 'iptables', protocol: entry.protocol };
+    }
 
     if (entry.isRange) {
       const agg = { protocol: entry.protocol, portCount: entry.ports.size, tcp: null, udp: null };
@@ -108,6 +129,77 @@ class Forwarder extends EventEmitter {
   }
 
   stopAll() { for (const id of [...this.running.keys()]) this.stop(id); }
+
+  // ── iptables helpers ───────────────────────────────────────────────────────
+
+  _ipt(args) {
+    return execFileSync('sudo', ['iptables', ...args], {
+      env: { PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', HOME: '/tmp' },
+      timeout: 10000,
+    });
+  }
+
+  _buildDNATArgsList(rule) {
+    const proto = (rule.protocol || 'TCP').toUpperCase();
+    const isRange = rule.portRangeEnd && Number(rule.portRangeEnd) > Number(rule.listenPort);
+    const isExpand = isRange && rule.rangeTarget !== 'single';
+
+    const dport = isRange
+      ? `${rule.listenPort}:${rule.portRangeEnd}`
+      : `${rule.listenPort}`;
+
+    const toDest = isExpand
+      ? `${rule.targetHost}:${rule.targetPort}-${Number(rule.targetPort) + (Number(rule.portRangeEnd) - Number(rule.listenPort))}`
+      : `${rule.targetHost}:${rule.targetPort}`;
+
+    const buildArgs = (p) => [
+      '-t', 'nat', '-I', 'PREROUTING',
+      '-p', p.toLowerCase(),
+      '--dport', dport,
+      '-j', 'DNAT',
+      '--to-destination', toDest,
+    ];
+
+    if (proto === 'TCP') return [buildArgs('tcp')];
+    if (proto === 'UDP') return [buildArgs('udp')];
+    // BOTH
+    return [buildArgs('tcp'), buildArgs('udp')];
+  }
+
+  _startIPTables(rule) {
+    const dnatArgsList = this._buildDNATArgsList(rule);
+
+    // Ensure MASQUERADE rule exists
+    const masqCheckArgs = ['-t', 'nat', '-C', 'POSTROUTING', '-j', 'MASQUERADE'];
+    try {
+      this._ipt(masqCheckArgs);
+    } catch {
+      this._ipt(['-t', 'nat', '-A', 'POSTROUTING', '-j', 'MASQUERADE']);
+    }
+
+    // Ensure FORWARD rule for targetHost exists
+    const fwdCheckArgs = ['-t', 'filter', '-C', 'FORWARD', '-d', rule.targetHost, '-j', 'ACCEPT'];
+    try {
+      this._ipt(fwdCheckArgs);
+    } catch {
+      this._ipt(['-t', 'filter', '-I', 'FORWARD', '-d', rule.targetHost, '-j', 'ACCEPT']);
+    }
+
+    // Insert DNAT rules
+    for (const args of dnatArgsList) {
+      this._ipt(args);
+    }
+  }
+
+  _stopIPTables(entry) {
+    for (const args of entry.dnatArgsList) {
+      // Replace -I with -D to delete the rule
+      const deleteArgs = args.map(a => a === '-I' ? '-D' : a);
+      try {
+        this._ipt(deleteArgs);
+      } catch {}
+    }
+  }
 
   // ── TCP ────────────────────────────────────────────────────────────────────
 
