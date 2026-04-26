@@ -324,7 +324,7 @@ app.post('/api/system/update', requireAuth, (req, res) => {
     npm_config_cache: '/tmp/.npm',
   };
 
-  const proc = spawn('sudo', ['bash', updateScript], { env: spawnEnv });
+  const proc = spawn('sudo', [updateScript], { env: spawnEnv });
   proc.stdout.on('data', (c) => send({ type: 'log', text: c.toString() }));
   proc.stderr.on('data', (c) => send({ type: 'log', text: c.toString() }));
   proc.on('error', (e) => { send({ type: 'log', text: `Error: ${e.message}\n` }); send({ type: 'done', code: 1, success: false }); res.end(); });
