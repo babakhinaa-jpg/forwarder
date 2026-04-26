@@ -268,6 +268,9 @@ const BUILD_INFO    = '/opt/port-forwarder/.build-info';  // written by install.
 const GITHUB_REPO   = 'babakhinaa-jpg/forwarder';
 const GITHUB_BRANCH = 'main';
 
+// Active update state — survives SSE disconnects so the script keeps running
+let activeUpdate = null; // null | { log: string, clients: Set<Response> }
+
 // Read version info from file written at install/update time (no subprocess needed)
 function readBuildInfo() {
   if (fs.existsSync(BUILD_INFO)) {
@@ -346,8 +349,21 @@ app.post('/api/system/update', requireAuth, (req, res) => {
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
-  const send = (data) => { try { res.write(`data: ${JSON.stringify(data)}\n\n`); } catch {} };
+  const sendTo = (r, data) => { try { r.write(`data: ${JSON.stringify(data)}\n\n`); } catch {} };
 
+  const broadcast = (data) => {
+    if (activeUpdate) for (const c of activeUpdate.clients) sendTo(c, data);
+  };
+
+  // Join an already-running update: replay buffered log, then subscribe
+  if (activeUpdate) {
+    if (activeUpdate.log) sendTo(res, { type: 'log', text: activeUpdate.log });
+    activeUpdate.clients.add(res);
+    req.on('close', () => { if (activeUpdate) activeUpdate.clients.delete(res); });
+    return;
+  }
+
+  // Start new update
   const updateScript = '/opt/port-forwarder/update.sh';
   const spawnEnv = {
     PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
@@ -356,29 +372,40 @@ app.post('/api/system/update', requireAuth, (req, res) => {
     npm_config_cache: '/tmp/.npm',
   };
 
+  activeUpdate = { log: '', clients: new Set([res]) };
+  // Do NOT kill the process on client disconnect — let it run to completion
+  req.on('close', () => { if (activeUpdate) activeUpdate.clients.delete(res); });
+
+  const appendLog = (text) => {
+    if (activeUpdate) activeUpdate.log += text;
+    broadcast({ type: 'log', text });
+  };
+
   const proc = spawn(updateScript, [], { env: spawnEnv });
-  let hasOutput = false;
-  const onData = (c) => { hasOutput = true; send({ type: 'log', text: c.toString() }); };
-  proc.stdout.on('data', onData);
-  proc.stderr.on('data', onData);
+
+  proc.stdout.on('data', (c) => appendLog(c.toString()));
+  proc.stderr.on('data', (c) => appendLog(c.toString()));
+
   proc.on('error', (e) => {
-    send({ type: 'log', text: `spawn error: ${e.message}\n` });
-    send({ type: 'done', code: 1, success: false });
-    res.end();
+    appendLog(`spawn error: ${e.message}\n`);
+    broadcast({ type: 'done', code: 1, success: false });
+    if (activeUpdate) { for (const c of activeUpdate.clients) try { c.end(); } catch {} }
+    activeUpdate = null;
   });
+
   proc.on('close', (code, signal) => {
-    if (!hasOutput) {
+    if (activeUpdate && !activeUpdate.log.trim()) {
       const hint = signal === 'SIGKILL'
-        ? `Killed by SIGKILL (OOM or TasksMax). Run: sudo ./install.sh to apply TasksMax=infinity fix.\n`
+        ? `Killed by SIGKILL (OOM / TasksMax). Run: sudo ./install.sh\n`
         : signal
-          ? `Killed by signal ${signal}. Run: sudo ./install.sh to re-deploy.\n`
-          : `No output, exit code ${code}. Run: sudo ./install.sh to re-deploy.\n`;
-      send({ type: 'log', text: hint });
+          ? `Killed by signal ${signal}. Run: sudo ./install.sh\n`
+          : `No output, exit code ${code}. Run: sudo ./install.sh\n`;
+      appendLog(hint);
     }
-    send({ type: 'done', code: code ?? 1, success: code === 0 });
-    res.end();
+    broadcast({ type: 'done', code: code ?? 1, success: code === 0 });
+    if (activeUpdate) { for (const c of activeUpdate.clients) try { c.end(); } catch {} }
+    activeUpdate = null;
   });
-  req.on('close', () => { if (!proc.killed) proc.kill(); });
 });
 
 app.post('/api/system/restart', requireAuth, (req, res) => {
