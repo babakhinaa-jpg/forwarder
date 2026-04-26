@@ -228,6 +228,16 @@ app.get('/api/system/iptables-check', requireAuth, (req, res) => {
   }
 });
 
+// ── System / ip_forward check ────────────────────────────────────────────────
+app.get('/api/system/ipforward', requireAuth, (req, res) => {
+  try {
+    const val = fs.readFileSync('/proc/sys/net/ipv4/ip_forward', 'utf8').trim();
+    res.json({ enabled: val === '1' });
+  } catch (e) {
+    res.json({ enabled: false, error: e.message });
+  }
+});
+
 // ── System / Update ───────────────────────────────────────────────────────────
 const { spawn } = require('child_process');
 const https = require('https');

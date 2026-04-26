@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { api } from '../api.js';
 import { useI18n } from '../i18n.jsx';
 
 export default function RuleModal({ rule, onSave, onClose, loading, error }) {
@@ -15,6 +16,12 @@ export default function RuleModal({ rule, onSave, onClose, loading, error }) {
     mode: rule?.mode || 'socket',
   });
   const [rangeMode, setRangeMode] = useState(!!(rule?.portRangeEnd));
+  const [ipFwd, setIpFwd] = useState(null); // null=checking, true=on, false=off
+
+  useEffect(() => {
+    if (form.mode !== 'iptables') { setIpFwd(null); return; }
+    api.checkIpForward().then(r => setIpFwd(r.enabled)).catch(() => setIpFwd(false));
+  }, [form.mode]);
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })); }
 
@@ -81,7 +88,22 @@ export default function RuleModal({ rule, onSave, onClose, loading, error }) {
             </div>
             {form.mode === 'iptables' && (
               <div style={{ marginTop: 8, padding: '8px 12px', background: 'rgba(245,158,11,.1)', border: '1px solid rgba(245,158,11,.3)', borderRadius: 'var(--radius)', fontSize: 12, color: '#fbbf24' }}>
-                {t('mode_iptables_info')}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                  <span>{t('mode_iptables_info')}</span>
+                  {ipFwd === null && (
+                    <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{t('ipfwd_checking')}</span>
+                  )}
+                  {ipFwd === true && (
+                    <span style={{ background: 'rgba(34,197,94,.2)', color: '#4ade80', padding: '2px 8px', borderRadius: 4, fontWeight: 700, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                      ✓ {t('ipfwd_on')}
+                    </span>
+                  )}
+                  {ipFwd === false && (
+                    <span style={{ background: 'rgba(239,68,68,.2)', color: '#fca5a5', padding: '2px 8px', borderRadius: 4, fontWeight: 700, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                      ✗ {t('ipfwd_off')}
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </div>

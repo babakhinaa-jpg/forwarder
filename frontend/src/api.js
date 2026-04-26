@@ -59,6 +59,9 @@ export const api = {
     }).then(handleResponse),
 
   // System
+  checkIpForward: () =>
+    fetch(`${BASE}/system/ipforward`, { headers: authHeaders() }).then(handleResponse),
+
   systemInfo: () =>
     fetch(`${BASE}/system/info`, { headers: authHeaders() }).then(handleResponse),
 
