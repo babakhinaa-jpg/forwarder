@@ -357,10 +357,22 @@ app.post('/api/system/update', requireAuth, (req, res) => {
   };
 
   const proc = spawn('sudo', [updateScript], { env: spawnEnv });
-  proc.stdout.on('data', (c) => send({ type: 'log', text: c.toString() }));
-  proc.stderr.on('data', (c) => send({ type: 'log', text: c.toString() }));
-  proc.on('error', (e) => { send({ type: 'log', text: `Error: ${e.message}\n` }); send({ type: 'done', code: 1, success: false }); res.end(); });
-  proc.on('close', (code) => { send({ type: 'done', code, success: code === 0 }); res.end(); });
+  let hasOutput = false;
+  const onData = (c) => { hasOutput = true; send({ type: 'log', text: c.toString() }); };
+  proc.stdout.on('data', onData);
+  proc.stderr.on('data', onData);
+  proc.on('error', (e) => {
+    send({ type: 'log', text: `spawn error: ${e.message}\n` });
+    send({ type: 'done', code: 1, success: false });
+    res.end();
+  });
+  proc.on('close', (code) => {
+    if (code !== 0 && !hasOutput) {
+      send({ type: 'log', text: `[no output] exit code ${code}\nRun on server: journalctl -u port-forwarder -n 20\nThen re-run: sudo ./install.sh\n` });
+    }
+    send({ type: 'done', code, success: code === 0 });
+    res.end();
+  });
   req.on('close', () => { if (!proc.killed) proc.kill(); });
 });
 
