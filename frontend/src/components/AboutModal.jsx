@@ -17,7 +17,7 @@ export default function AboutModal({ onClose }) {
           </div>
           <div>
             <h2 style={{ marginBottom: 2 }}>{t('about_title')}</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0 }}>v1.2 · babakhinaa-jpg/forwarder</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0 }}>v1.3 · babakhinaa-jpg/forwarder</p>
           </div>
         </div>
 
